@@ -13,7 +13,7 @@ Parameters:
   RepoRootURL:
     Type: String
     Description: Root url for the repo containing the product templates.
-  ProductVersiontName:
+  ProductVersionName:
     Type: String
     Description: The product version name in the service catalog
 Resources:
@@ -33,7 +33,7 @@ Resources:
         - Description: baseline version
           Info:
             LoadTemplateFromURL: !Sub '${RepoRootURL}s3/sc-s3-cidr-ra.yaml'
-          Name: !Ref ProductVersiontName
+          Name: !Ref 'ProductVersionName'
   Associates3:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation
     Properties:

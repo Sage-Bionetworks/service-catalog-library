@@ -13,7 +13,7 @@ Parameters:
   RepoRootURL:
     Type: String
     Description: Root url for the repo containing the product templates.
-  ProductVersiontName:
+  ProductVersionName:
     Type: String
     Description: The product version name in the service catalog
 Resources:
@@ -34,7 +34,7 @@ Resources:
         - Description: baseline version
           Info:
             LoadTemplateFromURL: !Sub '${RepoRootURL}vpc/sc-vpc-ra.yaml'
-          Name: !Ref ProductVersiontName
+          Name: !Ref 'ProductVersionName'
   Associatevpc:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation
     Properties:

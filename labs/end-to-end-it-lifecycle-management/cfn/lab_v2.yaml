@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: ' This cloudformation template creates resources for the re:inforce workshop.(fdp-1o32smpoh)'
 Parameters:
-  ProductVersiontName:
+  ProductVersionName:
     Type: String
     Description: The product version name in the service catalog
 Mappings:
@@ -109,7 +109,7 @@ Resources:
         - Description: Base Version
           Info:
             LoadTemplateFromURL: https://s3.amazonaws.com/marketplace-sa-resources/ec2CFT.json
-          Name: !Ref ProductVersiontName
+          Name: !Ref 'ProductVersionName'
   ProdAssEC2:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation
     DependsOn:
