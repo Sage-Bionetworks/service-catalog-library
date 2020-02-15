@@ -13,11 +13,15 @@ Parameters:
   RepoRootURL:
     Type: String
     Description: Root url for the repo containing the product templates.
+  StackDatetime:
+    Type: String
+    Description: Last updated datetime.
+    Default: ""
 Resources:
   scec2linuxproduct:
     Type: AWS::ServiceCatalog::CloudFormationProduct
     Properties:
-      Name: [DEVELOPMENT] EC2 Linux with Jumpcloud Integration
+      Name: '[DEVELOPMENT] EC2 Linux with Jumpcloud Integration'
       Description: This product builds one Linux EC2 instance, either
         Amazon Linux or Ubuntu, with Jumpcloud integration. It also creates a
         SSM patch baseline, maintenance window, and patch task to scan for
@@ -31,8 +35,12 @@ Resources:
       ProvisioningArtifactParameters:
         - Description: baseline version
           Info:
-            LoadTemplateFromURL: !Sub '${RepoRootURL}ec2/sc-ec2-linux-jumpcloud.yaml'
+            LoadTemplateFromURL: !Sub '${RepoRootURL}ec2/sc-ec2-linux-jumpcloud-v1.0.0.yaml'
           Name: v.1.0.0
+        - Description: !Sub 'Some minor update. Last updated ${StackDatetime}.'
+          Info:
+            LoadTemplateFromURL: !Sub '${RepoRootURL}ec2/sc-ec2-linux-jumpcloud-v1.0.2.yaml'
+          Name: v.1.0.2
   Associateec2linux:
     Type: AWS::ServiceCatalog::PortfolioProductAssociation
     Properties:
