@@ -30,7 +30,7 @@ Mappings:
     Ubuntu:
       AMIID: ami-07ebfd5b3428b6f4d
     AmazonLinux:
-      AMIID: ami-0ca7208f904dc1874
+      AMIID: ami-0944334364827dc2d
 Parameters:
   PrivateNetwork:
     Type: String
