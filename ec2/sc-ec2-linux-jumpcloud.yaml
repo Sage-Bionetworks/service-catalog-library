@@ -18,7 +18,7 @@ Metadata:
       PrivateNetwork:
         default: Use private network?
       OpenPort:
-        default: Open Port
+        default: Open Ports (Public Network Only)
       EC2InstanceType:
         default: EC2 Instance Type
       LinuxDistribution:
@@ -190,7 +190,7 @@ Parameters:
     Description: Amazon EC2 Instance Type
     Type: String
   OpenPort:
-    Description: (Optional) Port to open if on public network
+    Description: (Optional) Standard ports to open for applications
     Type: String
     AllowedValues:
       - Web
