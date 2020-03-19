@@ -7,7 +7,6 @@ Metadata:
           default: General Configuration
         Parameters:
           - PrivateNetwork
-          - PrivateNetwork
       - Label:
           default: Linux Instance Configuration
         Parameters:
