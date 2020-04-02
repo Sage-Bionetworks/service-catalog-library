@@ -16,7 +16,7 @@ Metadata:
 Parameters:
   VpcName:
     Type: String
-    Description: The vpc name used to reference resources
+    Description: The VPC to put resources into
     Default: 'internalpoolvpc'
   WindowsInstanceType:
     AllowedValues:

@@ -3,7 +3,7 @@ Description: '[DEVELOPMENT-TTHYER] Linux EC2 ServiceCatalog product with Jumpclo
 Parameters:
   VpcName:
     Type: String
-    Description: The vpc name used to reference resources
+    Description: The VPC to put resources into
     Default: 'internalpoolvpc'
   PortfolioProvider:
     Type: String
