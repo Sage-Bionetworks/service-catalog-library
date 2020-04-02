@@ -22,6 +22,10 @@ Metadata:
         Parameters:
           - RepoRootURL
 Parameters:
+  VpcName:
+    Type: String
+    Description: The vpc name used to reference resources
+    Default: 'internalpoolvpc'
   PortfolioProvider:
     Type: String
     Description: Provider Name
