@@ -30,7 +30,10 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:role/synapse-login-scipool*-InstanceRole-*'
+              AWS: *
+            Condition:
+              StringLike:
+                iam:PrincipalArn: arn:aws:iam::${AWS::AccountId}:role/synapse-login-scipool*-InstanceRole-*
             Action:
               - 'sts:AssumeRole'
               - 'sts:TagSession'
