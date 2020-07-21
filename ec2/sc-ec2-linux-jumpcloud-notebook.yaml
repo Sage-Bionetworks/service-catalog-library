@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Service Catalog: Workflows Linux EC2 with Jumpcloud integration.'
+Description: 'Service Catalog: Notebook Linux EC2'
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -7,17 +7,29 @@ Metadata:
           default: Linux Instance Configuration
         Parameters:
           - EC2InstanceType
+          - NotebookType
           - VolumeSize
     ParameterLabels:
       EC2InstanceType:
         default: EC2 Instance Type
+      NotebookType:
+        default: Notebook Type
       VolumeSize:
         default: Disk Size
+
+Mappings:
+
+  NotebookTypes:
+    Rstudio:
+      AMIID: "ami-051310d409a32a5aa"  # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
+
 Parameters:
+
   VpcName:
     Type: String
     Description: The VPC to put resources into
     Default: 'internalpoolvpc'
+
   EC2InstanceType:
     AllowedValues:
       - c4.large
@@ -168,13 +180,23 @@ Parameters:
     Default: t3.micro
     Description: Amazon EC2 Instance Type
     Type: String
+
+  NotebookType:
+    Type: String
+    Description: Type of notebook software to install
+    Default: Rstudio
+    AllowedValues:
+      - Rstudio
+
   VolumeSize:
     Description: The EC2 volume size (in GB)
     Type: Number
     Default: 16
     MinValue: 16
     MaxValue: 2000
+
 Resources:
+
   InstanceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -197,12 +219,27 @@ Resources:
                 - ssm.amazonaws.com #For maintenance service
             Action:
               - sts:AssumeRole
+
+  NotebookConnectSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: 'Add ingress to 443 from notebook connection ALB'
+      VpcId: !ImportValue
+        'Fn::Sub': '${AWS::Region}-${VpcName}-VPCId'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !ImportValue
+            'Fn::Sub': '${AWS::Region}-alb-notebook-access-ALBSecurityGroup'
+
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: /
       Roles:
         - !Ref 'InstanceRole'
+
   LinuxInstance:
     Type: AWS::EC2::Instance
     Metadata:
@@ -219,11 +256,8 @@ Resources:
           SetTags:
             - TagRootVolume
             - TagInstance
-          SetupJumpcloud:
-            - install_jc
-            - config_jc
-          SetupDocker:
-            - add_docker_user
+          SetupApacheProxy:
+            - WriteApacheConf
         cfn_hup_service:
           files:
             /etc/cfn/cfn-hup.conf:
@@ -241,7 +275,7 @@ Resources:
                 [cfn-auto-reloader-hook]
                 triggers=post.update
                 path=Resources.LinuxInstance.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets SetupCfn,SetEnv,SetTags,SetupJumpcloud,SetupDocker --region ${AWS::Region}
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets SetupCfn,SetEnv,SetTags,SetupApacheProxy --region ${AWS::Region}
               mode: "000400"
               owner: root
               group: root
@@ -268,7 +302,7 @@ Resources:
         set_env_vars:
           files:
             /opt/sage/bin/make_env_vars_file.sh:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.4/linux/opt/sage/bin/make_env_vars_file.sh"
+              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.6/linux/opt/sage/bin/make_env_vars_file.sh"
               mode: "00744"
               owner: "root"
               group: "root"
@@ -279,30 +313,6 @@ Resources:
                 AWS_REGION: !Ref AWS::Region
                 STACK_NAME: !Ref AWS::StackName
                 STACK_ID: !Ref AWS::StackId
-        install_jc:
-          commands:
-            01_jumpcloud_agent:
-              command: !Join
-                - ''
-                - - "/usr/bin/curl --silent --show-error --header 'x-connect-key: "
-                  - Fn::Transform: {"Name": "SsmParam", "Parameters": {"Type": "SecureString", "Name": "/infra/JcConnectKey"}}
-                  - "' https://kickstart.jumpcloud.com/Kickstart | sudo bash"
-        config_jc:
-          files:
-            /opt/sage/bin/associate_jc_systems.py:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.4/linux/opt/sage/bin/associate_jc_systems.py"
-              mode: "00744"
-              owner: "root"
-              group: "root"
-          commands:
-            # allow agent time to register with jumpcloud account
-            01_wait_registration:
-              command: "sleep 10"
-            02_associate_jc_systems:
-              command: ". /opt/sage/bin/instance_env_vars.sh && /usr/bin/python3 /opt/sage/bin/associate_jc_systems.py"
-              env:
-                JC_SERVICE_API_KEY:
-                  Fn::Transform: {"Name": "SsmParam", "Parameters": {"Type": "SecureString", "Name": "/infra/JcServiceApiKey"}}
         TagRootVolume:
           commands:
             01_tag_root_disk:
@@ -315,24 +325,31 @@ Resources:
         TagInstance:
           files:
             /opt/sage/bin/apply_name_tag.sh:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.4/linux/opt/sage/bin/apply_name_tag.sh"
+              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.6/linux/opt/sage/bin/apply_name_tag.sh"
               mode: "00744"
               owner: "root"
               group: "root"
           commands:
             01_name_tag:
               command: "/bin/bash /opt/sage/bin/apply_name_tag.sh"
-        add_docker_user:
+        WriteApacheConf:
+          files:
+            /opt/sage/bin/apache_conf_rewrite.sh:
+              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.6/linux/opt/sage/bin/apache_conf_rewrite.sh"
+              mode: "00744"
+              owner: "root"
+              group: "root"
           commands:
-            01_add_jc_user_to_docker_group:
-              command: "gpasswd -a $(cat /opt/sage/jcusername) docker"
+            01_rewrite_apache_conf:
+              command: "/bin/bash /opt/sage/bin/apache_conf_rewrite.sh"
     Properties:
-      ImageId: "ami-04e9c4e5c4e40ec12"  # https://github.com/Sage-Bionetworks-IT/packer-workflows/releases/tag/v1.0.4
+      ImageId: !FindInMap [NotebookTypes, !Ref NotebookType, AMIID]
       InstanceType: !Ref 'EC2InstanceType'
       SubnetId: !ImportValue
         'Fn::Sub': '${AWS::Region}-${VpcName}-PrivateSubnet'
       SecurityGroupIds:
         - 'Fn::ImportValue': !Sub '${AWS::Region}-${VpcName}-VpnSecurityGroup'
+        - !Ref NotebookConnectSecurityGroup
       KeyName: 'scipool'
       BlockDeviceMappings:
         -
@@ -345,7 +362,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets SetupCfn,SetEnv,SetTags,SetupJumpcloud,SetupDocker --region ${AWS::Region}
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets SetupCfn,SetEnv,SetTags,SetupApacheProxy --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource LinuxInstance --region ${AWS::Region}
       Tags:
         - Key: Name
@@ -356,10 +373,41 @@ Resources:
           Value: "yes"
         - Key: "PatchGroup"
           Value: "prod-default"
-          #The session name appended to this roleid becomes the value of the AccessApprovedCaller tag
-        - Key: "AccessApprovedRoleId"
-          Value: !ImportValue
-            'Fn::Sub': '${AWS::Region}-sc-enduser-iam-ServiceCatalogEndusers-RoleId'
+
+  EC2TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 15
+      HealthyThresholdCount: 5
+      Matcher:
+        HttpCode: '200'
+      Port: 443
+      Protocol: HTTPS
+      TargetGroupAttributes:
+      - Key: deregistration_delay.timeout_seconds
+        Value: '20'
+      Targets:
+      - Id: !Ref LinuxInstance
+        Port: 443
+      UnhealthyThresholdCount: 3
+      VpcId: !ImportValue
+        'Fn::Sub': '${AWS::Region}-${VpcName}-VPCId'
+      Tags:
+      - Key: Name
+        Value: !Sub 'TargetGroup-${LinuxInstance}'
+
+  AlbListenerRule:
+    Type: Custom::ALBListenerRule
+    Properties:
+      ServiceToken: !ImportValue
+        'Fn::Sub': '${AWS::Region}-cfn-cr-alb-rule-FunctionArn'
+      InstanceId: !Ref LinuxInstance
+      TargetGroupArn: !Ref EC2TargetGroup
+      ListenerArn: !ImportValue
+        'Fn::Sub': '${AWS::Region}-alb-notebook-access-ALBListenerARN'
+
 Outputs:
   LinuxInstanceId:
     Description: 'The ID of the EC2 instance'
@@ -370,9 +418,19 @@ Outputs:
   EC2InstanceType:
     Description: 'The EC2 instance type'
     Value: !Ref 'EC2InstanceType'
+  ConnectionInstructions:
+    Description: 'Guidelines on connecting to instances'
+    Value: "https://sagebionetworks.jira.com/wiki/spaces/IT/pages/996376579/Connect+to+Provisioned+Instances"
   ConnectionURI:
     Description: 'Starts a shell session in the AWS Console'
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/systems-manager/session-manager/${LinuxInstance}?region=${AWS::Region}"
   EC2ConsoleURI:
     Description: 'Check your instance status with this link to the AWS Console'
     Value: !Sub "https://console.aws.amazon.com/ec2/v2/home?region=${AWS::Region}#Instances:search=${LinuxInstance}"
+  NotebookConnectionURI:
+    Description: 'Notebook server login page'
+    Value: !Sub
+      - '${ALBConnectionURI}/${Path}/'
+      - ALBConnectionURI: !ImportValue
+          'Fn::Sub': '${AWS::Region}-alb-notebook-access-ConnectionURI'
+        Path: !Ref LinuxInstance
