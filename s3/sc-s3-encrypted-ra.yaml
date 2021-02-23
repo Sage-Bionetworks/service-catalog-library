@@ -12,6 +12,7 @@ Metadata:
           default: S3 Bucket Policy Configuration
         Parameters:
           - S3UserARNs
+          - RestrictSameRegionDownload
 Parameters:
   S3UserARNs:
     Type: CommaDelimitedList
@@ -25,6 +26,16 @@ Parameters:
     Type: String
     Description: (Optional) Name of the created bucket.
     Default: ""
+  RestrictSameRegionDownload:
+    Type: String
+    Description: >
+      (Optional) Data transfers within the same region between AWS resources are free.
+      true to restrict downloading files from this bucket to only AWS resources (e.g. EC2 , Lambda) within the same region as this bucket.
+      This will not allow even the owner of the bucket to download objects in this bucket when not using an AWS resource in the same region!
+    AllowedValues:
+      - true
+      - false
+    Default: true
 Conditions:
   HasBucketName: !Not [!Equals [!Ref BucketName, ""]]
 Resources:
@@ -51,6 +62,18 @@ Resources:
         'Fn::Sub': '${AWS::Region}-cfn-cr-sc-bucket-policy-FunctionArn'
       BucketName: !Ref S3Bucket
       ExtraPrincipalArns: !Ref S3UserARNs
+
+  IPAddressRestiction:
+    DependsOn: S3BucketPolicy
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: !Equals [!Ref RestrictSameRegionDownload, true]
+    Properties:
+      # TODO: Change
+      TemplateURL: s3://testerino-zdong-dev/cfn-cr-same-region-bucket-download/master/cfn-cr-same-region-bucket-download-template.yaml
+      Parameters:
+        BucketName: !GetAtt 'S3Bucket.Arn'
+
+
 Outputs:
   BucketName:
     Description: 'The name of the S3 Bucket'
