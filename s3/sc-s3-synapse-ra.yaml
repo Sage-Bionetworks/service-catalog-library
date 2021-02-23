@@ -48,6 +48,7 @@ Parameters:
     Default: true
 Conditions:
   HasBucketName: !Not [!Equals [!Ref BucketName, ""]]
+  CreateSameRegionDownloadRestriction: !Equals [!Ref RestrictSameRegionDownload, true]
 Resources:
   S3Bucket:
     Type: "AWS::S3::Bucket"
@@ -104,9 +105,8 @@ Resources:
   IPAddressRestiction:
     DependsOn: S3BucketPolicy
     Type: 'AWS::CloudFormation::Stack'
-    Condition: !Equals [!Ref RestrictSameRegionDownload, true]
+    Condition: CreateSameRegionDownloadRestriction
     Properties:
-      # template uploaded from Sage-Bionetworks/aws-infra repo
       # TODO: Change
       TemplateURL: s3://testerino-zdong-dev/cfn-cr-same-region-bucket-download/master/cfn-cr-same-region-bucket-download-template.yaml
       Parameters:
