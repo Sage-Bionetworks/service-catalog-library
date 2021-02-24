@@ -108,7 +108,7 @@ Resources:
     Condition: CreateSameRegionDownloadRestriction
     Properties:
       # TODO: Change
-      TemplateURL: s3://testerino-zdong-dev/cfn-cr-same-region-bucket-download/master/cfn-cr-same-region-bucket-download-template.yaml
+      TemplateURL: 'https://bootstrap-awss3cloudformationbucket-19qromfd235z9.s3.amazonaws.com/cfn-cr-same-region-bucket-download/SC-240/cfn-cr-same-region-bucket-download-template.yaml'
       Parameters:
         BucketName: !GetAtt 'S3Bucket.Arn'
 
