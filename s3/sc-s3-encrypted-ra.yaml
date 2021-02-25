@@ -35,7 +35,7 @@ Parameters:
     AllowedValues:
       - true
       - false
-    Default: true
+    Default: false
 Conditions:
   HasBucketName: !Not [!Equals [!Ref BucketName, ""]]
   CreateSameRegionDownloadRestriction: !Equals [!Ref RestrictSameRegionDownload, true]
