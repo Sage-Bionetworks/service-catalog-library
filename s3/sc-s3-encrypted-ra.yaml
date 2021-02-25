@@ -64,7 +64,7 @@ Resources:
       BucketName: !Ref S3Bucket
       ExtraPrincipalArns: !Ref S3UserARNs
 
-  SameRegionIPAddressRestiction:
+  SameRegionDownloadRestriction:
     DependsOn: S3BucketPolicy
     Type: 'AWS::CloudFormation::Stack'
     Condition: CreateSameRegionDownloadRestriction

@@ -102,7 +102,7 @@ Resources:
       ServiceToken: !ImportValue
         'Fn::Sub': '${AWS::Region}-cfn-cr-synapse-tagger-SetBucketTagsFunctionArn'
       BucketName: !Ref S3Bucket
-  SameRegionIPAddressRestiction:
+  SameRegionDownloadRestriction:
     DependsOn: S3BucketPolicy
     Type: 'AWS::CloudFormation::Stack'
     Condition: CreateSameRegionDownloadRestriction
