@@ -24,7 +24,8 @@ Metadata:
 Mappings:
   NotebookTypes:
     Rstudio:
-      AMIID: "ami-051310d409a32a5aa"  # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
+      # TODO : currently using test AMI, replace with actual AMI once changes are validated 
+      AMIID: "ami-063b8ca32256fe945"  # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
   AccountToImportParams:
     'Fn::Transform':
       Name: 'AWS::Include'
@@ -263,8 +264,6 @@ Resources:
             - cfn_hup_service
           SetEnv:
             - set_env_vars
-          SetupApacheProxy:
-            - WriteApacheConf
         cfn_hup_service:
           files:
             /etc/cfn/cfn-hup.conf:
@@ -320,16 +319,6 @@ Resources:
                 AWS_REGION: !Ref AWS::Region
                 STACK_NAME: !Ref AWS::StackName
                 STACK_ID: !Ref AWS::StackId
-        WriteApacheConf:
-          files:
-            /opt/sage/bin/apache_conf_rewrite.sh:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.7/linux/opt/sage/bin/apache_conf_rewrite.sh"
-              mode: "00744"
-              owner: "root"
-              group: "root"
-          commands:
-            01_rewrite_apache_conf:
-              command: "/bin/bash /opt/sage/bin/apache_conf_rewrite.sh"
     Properties:
       ImageId: !FindInMap [NotebookTypes, !Ref NotebookType, AMIID]
       InstanceType: !Ref 'EC2InstanceType'
