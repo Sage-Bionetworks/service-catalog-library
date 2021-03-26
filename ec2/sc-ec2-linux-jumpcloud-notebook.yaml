@@ -25,7 +25,8 @@ Mappings:
   NotebookTypes:
     Rstudio:
       # TODO : currently using test AMI, replace with actual AMI once changes are validated
-      AMIID: "ami-063b8ca32256fe945"  # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
+     # AMIID: "ami-063b8ca32256fe945"  # my test ami
+      AMIID: "ami-051310d409a32a5aa" # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
   AccountToImportParams:
     'Fn::Transform':
       Name: 'AWS::Include'
