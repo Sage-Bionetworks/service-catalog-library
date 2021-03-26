@@ -201,20 +201,6 @@ Parameters:
     MaxValue: 2000
 
 Resources:
-
-  WriteToSSMPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      Description: Allows writing to SSM Parameter Store to save incomming Synapse JWT token
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Action:
-              - ssm:PutParameter
-            # can't reference Linux instance or a circular dependency will occur
-            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/synapse/cred/*"
-
   InstanceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -227,7 +213,8 @@ Resources:
         - !ImportValue
           'Fn::Sub': '${AWS::Region}-get-role-policy-ReadAssumedRoleInformationPolicy'
         - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore' #For maintenance tasks
-        - !Ref WriteToSSMPolicy
+        - !ImportValue
+          'Fn::Sub': '${AWS::Region}-sc-product-ec2-linux-jumpcloud-notebook-WriteToSSMPolicy'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
