@@ -24,7 +24,7 @@ Metadata:
 Mappings:
   NotebookTypes:
     Rstudio:
-      # TODO : currently using test AMI, replace with actual AMI once changes are validated 
+      # TODO : currently using test AMI, replace with actual AMI once changes are validated
       AMIID: "ami-063b8ca32256fe945"  # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
   AccountToImportParams:
     'Fn::Transform':
@@ -202,6 +202,19 @@ Parameters:
 
 Resources:
 
+  WriteToSSMPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Allows writing to SSM Parameter Store to save incomming Synapse JWT token
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - ssm:PutParameter
+            # can't reference Linux instance or a circular dependency will occur
+            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/synapse/cred/*"
+
   InstanceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -214,6 +227,7 @@ Resources:
         - !ImportValue
           'Fn::Sub': '${AWS::Region}-get-role-policy-ReadAssumedRoleInformationPolicy'
         - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore' #For maintenance tasks
+        - !Ref WriteToSSMPolicy
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
