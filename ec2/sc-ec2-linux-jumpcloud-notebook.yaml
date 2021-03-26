@@ -214,7 +214,7 @@ Resources:
           'Fn::Sub': '${AWS::Region}-get-role-policy-ReadAssumedRoleInformationPolicy'
         - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore' #For maintenance tasks
         - !ImportValue
-          'Fn::Sub': '${AWS::Region}-sc-product-ec2-linux-jumpcloud-notebook-WriteToSSMPolicy'
+          'Fn::Sub': '${AWS::Region}-sc-product-ec2-linux-jumpcloud-notebook-write-to-ssm-policy-WriteToSSMPolicy'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
