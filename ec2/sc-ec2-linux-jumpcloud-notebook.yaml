@@ -25,8 +25,8 @@ Mappings:
   NotebookTypes:
     Rstudio:
       # TODO : currently using test AMI, replace with actual AMI once changes are validated
-     # AMIID: "ami-063b8ca32256fe945"  # my test ami
-      AMIID: "ami-051310d409a32a5aa" # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
+      AMIID: "ami-063b8ca32256fe945"  # my test ami
+      # AMIID: "ami-051310d409a32a5aa" # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
   AccountToImportParams:
     'Fn::Transform':
       Name: 'AWS::Include'
@@ -214,8 +214,8 @@ Resources:
         - !ImportValue
           'Fn::Sub': '${AWS::Region}-get-role-policy-ReadAssumedRoleInformationPolicy'
         - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore' #For maintenance tasks
-        # - !ImportValue
-        #   'Fn::Sub': '${AWS::Region}-sc-product-ec2-linux-jumpcloud-notebook-write-to-ssm-policy-WriteToSSMPolicy'
+        - !ImportValue
+          'Fn::Sub': '${AWS::Region}-sc-product-ec2-linux-jumpcloud-notebook-write-to-ssm-policy-WriteToSSMPolicy'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -283,7 +283,7 @@ Resources:
                 [cfn-auto-reloader-hook]
                 triggers=post.update
                 path=Resources.LinuxInstance.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets SetupCfn,SetEnv,SetupApacheProxy --region ${AWS::Region}
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets SetupCfn,SetEnv --region ${AWS::Region}
               mode: "000400"
               owner: root
               group: root
@@ -342,7 +342,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets SetupCfn,SetEnv,SetupApacheProxy --region ${AWS::Region}
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets SetupCfn,SetEnv --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource LinuxInstance --region ${AWS::Region}
       Tags:
         - Key: Name
