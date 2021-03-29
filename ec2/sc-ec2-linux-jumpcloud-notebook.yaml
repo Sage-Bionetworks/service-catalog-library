@@ -25,7 +25,7 @@ Mappings:
   NotebookTypes:
     Rstudio:
       # TODO : currently using test AMI, replace with actual AMI once changes are validated
-      AMIID: "ami-063b8ca32256fe945"  # my test ami
+      AMIID: "ami-0ef6c9a3361740807"  # my test ami
       # AMIID: "ami-051310d409a32a5aa" # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
   AccountToImportParams:
     'Fn::Transform':
@@ -237,7 +237,7 @@ Resources:
     Properties:
       GroupDescription: 'Add ingress to 443 from notebook connection ALB'
       VpcId: !ImportValue
-          'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", VPCId]
+        'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", VPCId]
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
@@ -251,6 +251,34 @@ Resources:
       Path: /
       Roles:
         - !Ref 'InstanceRole'
+
+  # The EC2 instance writes to it, but this is introduced for the cleanup of the parameter
+  InstanceSSMParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      # This will need to be synced with the `packer-rstudio` project
+      Name: !Sub "/service-catalog/synapse/cred/${LinuxInstance}/odic-accesstoken"
+      Type: String
+      Value: to be replaced by EC2
+
+  SSMParameterEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+        - Sid: Allow use of the key
+          Effect: Allow
+          Principal:
+            AWS: !Sub "${InstanceRole.Arn}"
+          Action:
+          - kms:DescribeKey
+          - kms:Encrypt
+          - kms:Decrypt
+          - kms:ReEncrypt*
+          - kms:GenerateDataKey
+          - kms:GenerateDataKeyWithoutPlaintext
+          Resource: '*'
 
   LinuxInstance:
     Type: AWS::EC2::Instance
