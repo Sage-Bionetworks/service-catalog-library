@@ -307,6 +307,12 @@ Resources:
             - "kms:CancelKeyDeletion"
           Resource: "*"
 
+  SSMParameterEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub '/service-catalog/synapse/cred/${LinuxInstance}'
+      TargetKeyId: !Ref SSMParameterEncryptionKey
+
   LinuxInstance:
     Type: AWS::EC2::Instance
     Metadata:
