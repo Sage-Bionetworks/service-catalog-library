@@ -279,6 +279,33 @@ Resources:
           - kms:GenerateDataKey
           - kms:GenerateDataKeyWithoutPlaintext
           Resource: '*'
+        - Sid: 'Default KMS Policy that enables IAM permissions'  # https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html#key-policy-default
+          Effect: 'Allow'
+          Principal:
+            AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+          Action:
+            - 'kms:*'
+          Resource: '*'
+        - Sid: "Allow administration of the key to CFN service role"
+          Effect: "Allow"
+          Principal:
+            AWS:
+              - !ImportValue
+                  'Fn::Sub': '${AWS::Region}-bootstrap-CfServiceRoleArn'
+          Action:
+            - "kms:Create*"
+            - "kms:Describe*"
+            - "kms:Enable*"
+            - "kms:List*"
+            - "kms:Put*"
+            - "kms:Update*"
+            - "kms:Revoke*"
+            - "kms:Disable*"
+            - "kms:Get*"
+            - "kms:Delete*"
+            - "kms:ScheduleKeyDeletion"
+            - "kms:CancelKeyDeletion"
+          Resource: "*"
 
   LinuxInstance:
     Type: AWS::EC2::Instance
