@@ -295,8 +295,9 @@ Resources:
               # TODO: Replace?
               - !Sub "arn:aws:iam::${AWS::AccountId}:role/scipooldev-admin"
               # The role running the cloudformation template
-              - !ImportValue:
-                'Fn::Sub': '${AWS::Region}-sc-ec2vpc-launchrole-LaunchRoleArn'
+              - 'arn:aws:iam::465877038949:role/SCEC2LaunchRole'
+              # - !ImportValue:
+              #   'Fn::Sub': '${AWS::Region}-sc-ec2vpc-launchrole-LaunchRoleArn'
           Action:
             - "kms:*"
             # - "kms:Create*"
