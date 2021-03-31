@@ -292,6 +292,11 @@ Resources:
             AWS:
               - !ImportValue
                   'Fn::Sub': '${AWS::Region}-bootstrap-CfServiceRoleArn'
+              - !ImportValue
+                  #TODO: replace?
+                  'Fn::Sub': "arn:aws:iam::${AWS::AccountId}:role/scipooldev-admin"
+              #TODO: definitely replace with self reference
+              - "arn:aws:iam::465877038949:role/ServiceCatalogEndusers"
           Action:
             - "kms:Create*"
             - "kms:Describe*"
