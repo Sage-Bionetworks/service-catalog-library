@@ -290,25 +290,26 @@ Resources:
           Effect: "Allow"
           Principal:
             AWS:
-              - !ImportValue
-                  'Fn::Sub': '${AWS::Region}-bootstrap-CfServiceRoleArn'
-              # TODO: Replace?
-              - !Sub "arn:aws:iam::${AWS::AccountId}:role/scipooldev-admin"
+              # - !ImportValue
+              #     'Fn::Sub': '${AWS::Region}-bootstrap-CfServiceRoleArn'
+              # # TODO: Replace?
+              # - !Sub "arn:aws:iam::${AWS::AccountId}:role/scipooldev-admin"
               #TODO: definitely replace with self reference
-              - !Sub "arn:aws:iam::${AWS::AccountId}:role/ServiceCatalogEndusers"
+              - "arn:aws:iam::465877038949:role/ServiceCatalogEndusers"
           Action:
-            - "kms:Create*"
-            - "kms:Describe*"
-            - "kms:Enable*"
-            - "kms:List*"
-            - "kms:Put*"
-            - "kms:Update*"
-            - "kms:Revoke*"
-            - "kms:Disable*"
-            - "kms:Get*"
-            - "kms:Delete*"
-            - "kms:ScheduleKeyDeletion"
-            - "kms:CancelKeyDeletion"
+            - "kms:*"
+            # - "kms:Create*"
+            # - "kms:Describe*"
+            # - "kms:Enable*"
+            # - "kms:List*"
+            # - "kms:Put*"
+            # - "kms:Update*"
+            # - "kms:Revoke*"
+            # - "kms:Disable*"
+            # - "kms:Get*"
+            # - "kms:Delete*"
+            # - "kms:ScheduleKeyDeletion"
+            # - "kms:CancelKeyDeletion"
           Resource: "*"
 
   SSMParameterEncryptionKeyAlias:
