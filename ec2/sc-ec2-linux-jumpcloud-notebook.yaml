@@ -201,6 +201,10 @@ Parameters:
     MinValue: 16
     MaxValue: 2000
 
+  CallerRoleARN:
+    Description: ARN of Role that is using this template in Cloudformation.
+    Type: String
+
 Resources:
   InstanceRole:
     Type: AWS::IAM::Role
@@ -290,12 +294,11 @@ Resources:
           Effect: "Allow"
           Principal:
             AWS:
-              # - !ImportValue
-              #     'Fn::Sub': '${AWS::Region}-bootstrap-CfServiceRoleArn'
-              # # TODO: Replace?
-              # - !Sub "arn:aws:iam::${AWS::AccountId}:role/scipooldev-admin"
-              #TODO: definitely replace with self reference
-              - "arn:aws:iam::465877038949:role/ServiceCatalogEndusers"
+              - !ImportValue
+                  'Fn::Sub': '${AWS::Region}-bootstrap-CfServiceRoleArn'
+              # TODO: Replace?
+              - !Sub "arn:aws:iam::${AWS::AccountId}:role/scipooldev-admin"
+              - !Ref CallerRoleARN
           Action:
             - "kms:*"
             # - "kms:Create*"
