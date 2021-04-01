@@ -264,6 +264,9 @@ Resources:
   SSMParameterEncryptionKey:
     Type: AWS::KMS::Key
     Properties:
+      Description: key used to encrypt SSM Parameters for a EC2 instance
+      # number of days to wait before key gets deleted
+      PendingWindowInDays: 7
       KeyPolicy:
         Version: "2012-10-17"
         Statement:
@@ -293,8 +296,6 @@ Resources:
               - !ImportValue
                 'Fn::Sub': '${AWS::Region}-bootstrap-CfServiceRoleArn'
               # TODO: Replace?
-              - !Sub "arn:aws:iam::${AWS::AccountId}:role/scipooldev-admin"
-              # The role running the cloudformation template
               - 'arn:aws:iam::465877038949:role/SCEC2LaunchRole'
               # - !ImportValue:
               #   'Fn::Sub': '${AWS::Region}-sc-ec2vpc-launchrole-LaunchRoleArn'
