@@ -317,7 +317,7 @@ Resources:
   SSMParameterEncryptionKeyAlias:
     Type: AWS::KMS::Alias
     Properties:
-      AliasName: !Sub '/service-catalog/synapse/cred/${LinuxInstance}'
+      AliasName: !Sub 'alias/service-catalog/synapse/cred/${LinuxInstance}'
       TargetKeyId: !Ref SSMParameterEncryptionKey
 
   LinuxInstance:
