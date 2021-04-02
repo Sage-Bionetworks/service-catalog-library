@@ -294,9 +294,9 @@ Resources:
           Principal:
             AWS:
               # TODO: Replace?
-              - 'arn:aws:iam::465877038949:role/SCEC2LaunchRole'
-              # - !ImportValue:
-              #   'Fn::Sub': '${AWS::Region}-sc-ec2vpc-launchrole-LaunchRoleArn'
+              # - 'arn:aws:iam::465877038949:role/SCEC2LaunchRole'
+              - !ImportValue
+                'Fn::Sub': '${AWS::Region}-sc-ec2vpc-launchrole-LaunchRoleArn'
           Action:
             - "kms:Create*"
             - "kms:Describe*"
