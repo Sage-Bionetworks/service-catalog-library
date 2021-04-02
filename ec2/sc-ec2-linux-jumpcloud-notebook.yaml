@@ -24,8 +24,8 @@ Metadata:
 Mappings:
   NotebookTypes:
     Rstudio:
-      # TODO : currently using test AMI, replace with actual AMI once changes are validated
-      AMIID: "ami-0765a2c468c4ca1f7"  # my test ami
+      # TODO : currently using test AMI, build new AMI once new version of R and Python Client are released
+      AMIID: "ami-0765a2c468c4ca1f7"  # test AMI
       # AMIID: "ami-051310d409a32a5aa" # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
   AccountToImportParams:
     'Fn::Transform':
@@ -279,7 +279,6 @@ Resources:
           Action:
             - kms:Decrypt
           Resource: '*'
-
         - Sid: Allow use of the key
           Effect: Allow
           Principal:
@@ -299,7 +298,6 @@ Resources:
           Action:
             - 'kms:*'
           Resource: '*'
-
         - Sid: "Allow administration of the key to CFN service role"
           Effect: "Allow"
           Principal:
