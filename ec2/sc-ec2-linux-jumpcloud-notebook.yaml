@@ -293,26 +293,23 @@ Resources:
           Effect: "Allow"
           Principal:
             AWS:
-              - !ImportValue
-                'Fn::Sub': '${AWS::Region}-bootstrap-CfServiceRoleArn'
               # TODO: Replace?
               - 'arn:aws:iam::465877038949:role/SCEC2LaunchRole'
               # - !ImportValue:
               #   'Fn::Sub': '${AWS::Region}-sc-ec2vpc-launchrole-LaunchRoleArn'
           Action:
-            - "kms:*"
-            # - "kms:Create*"
-            # - "kms:Describe*"
-            # - "kms:Enable*"
-            # - "kms:List*"
-            # - "kms:Put*"
-            # - "kms:Update*"
-            # - "kms:Revoke*"
-            # - "kms:Disable*"
-            # - "kms:Get*"
-            # - "kms:Delete*"
-            # - "kms:ScheduleKeyDeletion"
-            # - "kms:CancelKeyDeletion"
+            - "kms:Create*"
+            - "kms:Describe*"
+            - "kms:Enable*"
+            - "kms:List*"
+            - "kms:Put*"
+            - "kms:Update*"
+            - "kms:Revoke*"
+            - "kms:Disable*"
+            - "kms:Get*"
+            - "kms:Delete*"
+            - "kms:ScheduleKeyDeletion"
+            - "kms:CancelKeyDeletion"
           Resource: "*"
 
   SSMParameterEncryptionKeyAlias:
