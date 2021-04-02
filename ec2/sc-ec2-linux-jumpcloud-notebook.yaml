@@ -270,16 +270,14 @@ Resources:
       KeyPolicy:
         Version: "2012-10-17"
         Statement:
-        - Sid: "Deny Permissions to all Principals that shouldn't require access"
+        - Sid: "Deny decrypt to all Principals that shouldn't require access"
           Effect: 'Deny'
           NotPrincipal:
             AWS:
               - !ImportValue
                 'Fn::Sub': '${AWS::Region}-sc-ec2vpc-launchrole-LaunchRoleArn'
-              - !Sub "${InstanceRole.Arn}"
-              - !Sub 'arn:aws:iam::${AWS::AccountId}:root'
           Action:
-            - 'kms:*'
+            - kms:Decrypt
           Resource: '*'
 
         - Sid: Allow use of the key
