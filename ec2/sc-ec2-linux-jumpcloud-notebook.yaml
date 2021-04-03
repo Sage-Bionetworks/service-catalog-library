@@ -322,6 +322,7 @@ Resources:
   SSMParameterEncryptionKeyAlias:
     Type: AWS::KMS::Alias
     Properties:
+      # This will need to be synced with the `packer-rstudio` project
       AliasName: !Sub 'alias/service-catalog/synapse/cred/${LinuxInstance}'
       TargetKeyId: !Ref SSMParameterEncryptionKey
 
