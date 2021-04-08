@@ -25,7 +25,8 @@ Mappings:
   NotebookTypes:
     Rstudio:
       # TODO : currently using test AMI, build new AMI once new version of R and Python Client are released
-      AMIID: "ami-0765a2c468c4ca1f7"  # test AMI
+      # AMIID: "ami-0765a2c468c4ca1f7"  # test AMI
+      AMIID: "ami-0329177f09840b4b1" # no env setup Script
       # AMIID: "ami-051310d409a32a5aa" # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
   AccountToImportParams:
     'Fn::Transform':
@@ -340,6 +341,10 @@ Resources:
             - cfn_hup_service
           SetEnv:
             - set_env_vars
+          SetupApacheProxy:
+            - write_apache_conf
+          SetupSynapseCredEnv:
+            - write_synapse_env
         cfn_hup_service:
           files:
             /etc/cfn/cfn-hup.conf:
@@ -357,7 +362,7 @@ Resources:
                 [cfn-auto-reloader-hook]
                 triggers=post.update
                 path=Resources.LinuxInstance.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets SetupCfn,SetEnv --region ${AWS::Region}
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets SetupCfn,SetEnv,SetupApacheProxy,SetupSynapseCredEnv --region ${AWS::Region}
               mode: "000400"
               owner: root
               group: root
@@ -395,6 +400,44 @@ Resources:
                 AWS_REGION: !Ref AWS::Region
                 STACK_NAME: !Ref AWS::StackName
                 STACK_ID: !Ref AWS::StackId
+        write_apache_conf:
+          files:
+            /opt/sage/bin/apache_conf_rewrite.sh:
+              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.7/linux/opt/sage/bin/apache_conf_rewrite.sh"
+              mode: "00744"
+              owner: "root"
+              group: "root"
+          commands:
+            01_rewrite_apache_conf:
+              command: "/bin/bash /opt/sage/bin/apache_conf_rewrite.sh"
+        write_synapse_env:
+          files:
+            /opt/sage/bin/apache_synapse_env.sh:
+              #TODO: replace
+              source: "https://raw.githubusercontent.com/zimingd/service-catalog-utils/SC-260/linux/opt/sage/bin/apache_synapse_cred_env.sh"
+              mode: "00744"
+              owner: "root"
+              group: "root"
+            /opt/sage/bin/rstudio_synapse_env.sh:
+              #TODO: replace
+              source: "https://raw.githubusercontent.com/zimingd/service-catalog-utils/SC-260/linux/opt/sage/bin/rstudio_synapse_cred_env.sh"
+              mode: "00744"
+              owner: "root"
+              group: "root"
+          commands:
+            01_write_apache_env:
+              command: "/bin/bash /opt/sage/bin/apache_synapse_env.sh"
+              env:
+                # Sync w/ InstanceSSMParameter and SSMParameterEncryptionKey
+                SERVICE_CATALOG_PREFIX: "service-catalog/synapse/cred"
+                SSM_PARAMETER_SUFFIX: "oidc-accesstoken"
+            02_write_rstudio_env:
+              command: "/bin/bash /opt/sage/bin/rstudio_synapse_env.sh"
+              env:
+                # Sync w/ InstanceSSMParameter and SSMParameterEncryptionKey
+                SERVICE_CATALOG_PREFIX: "service-catalog/synapse/cred"
+                SSM_PARAMETER_SUFFIX: "oidc-accesstoken"
+
     Properties:
       ImageId: !FindInMap [NotebookTypes, !Ref NotebookType, AMIID]
       InstanceType: !Ref 'EC2InstanceType'
