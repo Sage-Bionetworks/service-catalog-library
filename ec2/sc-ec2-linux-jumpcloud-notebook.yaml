@@ -258,7 +258,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       # This will need to be synced with the `packer-rstudio` project
-      Name: !Sub "/service-catalog/synapse/cred/${LinuxInstance}/odic-accesstoken"
+      Name: !Sub "/service-catalog/synapse/cred/${LinuxInstance}/oidc-accesstoken"
       Type: String
       Value: to be replaced by EC2
 
