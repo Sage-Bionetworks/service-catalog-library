@@ -413,13 +413,11 @@ Resources:
         write_synapse_env:
           files:
             /opt/sage/bin/apache_synapse_env.sh:
-              #TODO: replace
               source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.8/linux/opt/sage/bin/apache_synapse_cred_env.sh"
               mode: "00744"
               owner: "root"
               group: "root"
             /opt/sage/bin/rstudio_synapse_env.sh:
-              #TODO: replace
               source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.8/linux/opt/sage/bin/rstudio_synapse_cred_env.sh"
               mode: "00744"
               owner: "root"
