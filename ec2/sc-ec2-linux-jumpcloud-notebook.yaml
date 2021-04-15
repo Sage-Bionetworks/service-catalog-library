@@ -271,9 +271,7 @@ Resources:
         - Sid: "Deny decrypt to all Principals that shouldn't require access"
           Effect: 'Deny'
           NotPrincipal:
-            AWS:
-              - !ImportValue
-                'Fn::Sub': "${InstanceRole.Arn}"
+            AWS: !Sub "${InstanceRole.Arn}"
           Action:
             - kms:Decrypt
           Resource: '*'
