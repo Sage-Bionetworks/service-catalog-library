@@ -273,7 +273,7 @@ Resources:
           NotPrincipal:
             AWS:
               - !ImportValue
-                'Fn::Sub': '${AWS::Region}-sc-ec2vpc-launchrole-LaunchRoleArn'
+                'Fn::Sub': "${InstanceRole.Arn}"
           Action:
             - kms:Decrypt
           Resource: '*'
