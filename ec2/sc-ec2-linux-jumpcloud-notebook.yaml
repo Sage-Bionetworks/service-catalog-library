@@ -268,10 +268,13 @@ Resources:
       KeyPolicy:
         Version: "2012-10-17"
         Statement:
+        # https://dev.to/jansonsa/aws-how-to-deny-access-to-resources-while-allowing-a-specific-role-547b
         - Sid: "Deny decrypt to all Principals that shouldn't require access"
           Effect: 'Deny'
-          NotPrincipal:
-            AWS: !Sub "${InstanceRole.Arn}"
+          Principal: "*"
+          Condition:
+            StringNotEquals:
+              "aws:PrincipalArn": !Sub "${InstanceRole.Arn}"
           Action:
             - kms:Decrypt
           Resource: '*'
