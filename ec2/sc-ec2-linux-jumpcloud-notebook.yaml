@@ -389,7 +389,7 @@ Resources:
         set_env_vars:
           files:
             /opt/sage/bin/make_env_vars_file.sh:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.8/linux/opt/sage/bin/make_env_vars_file.sh"
+              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/master/linux/opt/sage/bin/make_env_vars_file.sh"
               mode: "00744"
               owner: "root"
               group: "root"
@@ -403,7 +403,7 @@ Resources:
         write_apache_conf:
           files:
             /opt/sage/bin/apache_conf_rewrite.sh:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.8/linux/opt/sage/bin/apache_conf_rewrite.sh"
+              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/master/linux/opt/sage/bin/apache_conf_rewrite.sh"
               mode: "00744"
               owner: "root"
               group: "root"
@@ -413,12 +413,12 @@ Resources:
         write_synapse_env:
           files:
             /opt/sage/bin/apache_synapse_cred_env.sh:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.8/linux/opt/sage/bin/apache_synapse_cred_env.sh"
+              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/master/linux/opt/sage/bin/apache_synapse_cred_env.sh"
               mode: "00744"
               owner: "root"
               group: "root"
             /opt/sage/bin/rstudio_synapse_cred_env.sh:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.8/linux/opt/sage/bin/rstudio_synapse_cred_env.sh"
+              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/master/linux/opt/sage/bin/rstudio_synapse_cred_env.sh"
               mode: "00744"
               owner: "root"
               group: "root"
