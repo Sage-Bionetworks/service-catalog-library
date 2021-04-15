@@ -403,7 +403,7 @@ Resources:
         write_apache_conf:
           files:
             /opt/sage/bin/apache_conf_rewrite.sh:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.7/linux/opt/sage/bin/apache_conf_rewrite.sh"
+              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/master/linux/opt/sage/bin/apache_conf_rewrite.sh"
               mode: "00744"
               owner: "root"
               group: "root"
@@ -412,25 +412,25 @@ Resources:
               command: "/bin/bash /opt/sage/bin/apache_conf_rewrite.sh"
         write_synapse_env:
           files:
-            /opt/sage/bin/apache_synapse_env.sh:
+            /opt/sage/bin/apache_synapse_cred_env.sh:
               source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.8/linux/opt/sage/bin/apache_synapse_cred_env.sh"
               mode: "00744"
               owner: "root"
               group: "root"
-            /opt/sage/bin/rstudio_synapse_env.sh:
+            /opt/sage/bin/rstudio_synapse_cred_env.sh:
               source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.8/linux/opt/sage/bin/rstudio_synapse_cred_env.sh"
               mode: "00744"
               owner: "root"
               group: "root"
           commands:
             01_write_apache_env:
-              command: "/bin/bash /opt/sage/bin/apache_synapse_env.sh"
+              command: "/bin/bash /opt/sage/bin/apache_synapse_cred_env.sh"
               env:
                 # Sync w/ InstanceSSMParameter and SSMParameterEncryptionKey
                 SERVICE_CATALOG_PREFIX: "service-catalog/synapse/cred"
                 SSM_PARAMETER_SUFFIX: "oidc-accesstoken"
             02_write_rstudio_env:
-              command: "/bin/bash /opt/sage/bin/rstudio_synapse_env.sh"
+              command: "/bin/bash /opt/sage/bin/rstudio_synapse_cred_env.sh"
               env:
                 # Sync w/ InstanceSSMParameter and SSMParameterEncryptionKey
                 SERVICE_CATALOG_PREFIX: "service-catalog/synapse/cred"
