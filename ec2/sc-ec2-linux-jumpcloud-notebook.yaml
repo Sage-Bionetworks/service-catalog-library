@@ -24,10 +24,7 @@ Metadata:
 Mappings:
   NotebookTypes:
     Rstudio:
-      # TODO : currently using test AMI, build new AMI once new version of R and Python Client are released
-      # AMIID: "ami-0765a2c468c4ca1f7"  # test AMI
-      AMIID: "ami-0329177f09840b4b1" # no env setup Script
-      # AMIID: "ami-051310d409a32a5aa" # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
+      AMIID: "ami-0d1b0ff6d129fb72b" # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.0.0
   AccountToImportParams:
     'Fn::Transform':
       Name: 'AWS::Include'
