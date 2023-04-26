@@ -38,11 +38,9 @@ jobs:
         role-to-assume: arn:aws:iam::745159704268:role/sagebase-github-oidc-sage-ProviderRoleservicecatal-1QGZSSGABE120
         role-session-name: GitHubActions-${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.run_id }}
         role-duration-seconds: 900
-    - name: Copy files with the AWS CLI
-      run: |
-        aws s3 rm --recursive s3://bootstrap-awss3cloudformationbucket-19qromfd235z9/${{ github.event.repository.name }}/${{ github.ref_name }}/
-        DIRS=$(ls -d */)
-        for dir in $DIRS
-        do
-          aws s3 cp --recursive ${dir} s3://bootstrap-awss3cloudformationbucket-19qromfd235z9/${{ github.event.repository.name }}/${{ github.ref_name }}/${dir}
-        done
+    - run: |
+        echo 'BRANCH_NAME=${{ github.ref_name }}' >> $GITHUB_ENV
+        echo 'REPO_NAME=${{ github.event.repository.name }}' >> $GITHUB_ENV
+    - run: |
+        chmod +x ./deploy-templates.sh
+        ./deploy-templates.sh
