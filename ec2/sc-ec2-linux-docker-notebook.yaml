@@ -326,7 +326,7 @@ Resources:
         start_reverse_proxy:
           commands:
             start_reverse_proxy:
-              command: "sudo docker start reverse-proxy || \
+              command: "docker start reverse-proxy || \
                 sudo docker run -d -p 443:443 \
                 --name reverse-proxy \
                 --network ${NETWORK_NAME} \
@@ -336,7 +336,7 @@ Resources:
                 -e AWS_REGION=${AWS_REGION} \
                 -e SERVICE_CATALOG_PREFIX=${SERVICE_CATALOG_PREFIX} \
                 -e SSM_PARAMETER_SUFFIX=${SSM_PARAMETER_SUFFIX} \
-                ghcr.io/brucehoff/notebook-reverse-proxy-{NOTEBOOK_TYPE}:main" # TODO ghcr.io/sage-bionetworks/notebook-reverse-proxy-{NOTEBOOK_TYPE}:1.0
+                ghcr.io/brucehoff/notebook-reverse-proxy-${NOTEBOOK_TYPE}:main" # TODO ghcr.io/sage-bionetworks/notebook-reverse-proxy-{NOTEBOOK_TYPE}:1.0
               env:
                 EC2_INSTANCE_ID: Resources.LinuxInstance.Metadata.AWS::CloudFormation::Init
                 AWS_REGION: !Ref AWS::Region
@@ -360,8 +360,8 @@ Resources:
         start_jupyter_notebook:
           commands:
             start_notebook:
-              command: "sudo docker start ${NOTEBOOK_CONTAINER_NAME} || \
-                sudo docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
+              command: "docker start ${NOTEBOOK_CONTAINER_NAME} || \
+                docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
                 --restart unless-stopped \
                 -e DOCKER_STACKS_JUPYTER_CMD=notebook \
                 -v ${EC2_WORK_DIR}:${JUPYTER_WORK_DIR} \
@@ -382,8 +382,8 @@ Resources:
         start_rstudio_notebook:
           commands:
             start_notebook:
-              command: "sudo docker start ${NOTEBOOK_CONTAINER_NAME} || \
-                sudo docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
+              command: "docker start ${NOTEBOOK_CONTAINER_NAME} || \
+                docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
                 --restart unless-stopped \
                 --network ${NETWORK_NAME} \
                 -e DISABLE_AUTH=true \
