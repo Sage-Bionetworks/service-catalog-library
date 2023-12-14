@@ -1,0 +1,515 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Service Catalog: Docker Notebook EC2'
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - E7001
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Linux Instance Configuration
+        Parameters:
+          - EC2InstanceType
+          - NotebookType
+          - VolumeSize
+    ParameterLabels:
+      EC2InstanceType:
+        default: EC2 Instance Type
+      NotebookType:
+        default: Notebook Type
+      VolumeSize:
+        default: Disk Size
+
+Mappings:
+  AccountToImportParams:
+    'Fn::Transform':
+      Name: 'AWS::Include'
+      Parameters:
+        # include is @ https://github.com/Sage-Bionetworks/admincentral-infra/blob/master/templates/cfn-service-catalog-snippets.yaml
+        Location: s3://cfn-snippets-bucket-cloudformationsnippetsbucket-elu83sv8ocdz/scipool-sc-lib-infra/ScAccountToExportMappping.yaml
+  NotebookTypeToInitParams:
+    Jupyter:
+      NoteBookTypeForDocker: jupyter
+      ConfigSet: StartContainersJupyter
+      DockerNotebookContainerName: jupyter-notebook
+      DockerNetworkName: proxy-net
+      DockerImage: quay.io/jupyter/base-notebook:python-3.11
+      EC2WorkDir: /home/ssm-user/workdir
+    Rstudio:
+      NoteBookTypeForDocker: rstudio
+      ConfigSet: StartContainersRstudio
+      DockerNotebookContainerName: rstudio-notebook
+      DockerNetworkName: proxy-net
+      DockerImage: rocker/rstudio:4.3.2
+      EC2WorkDir: /home/ssm-user/workdir
+
+Parameters:
+
+  EC2InstanceType:
+    AllowedValues:
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5d.large
+      - c5d.xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5n.large
+      - c5n.xlarge
+      - c5n.2xlarge
+      - c5n.4xlarge
+      - i3en.large
+      - i3en.xlarge
+      - i3en.2xlarge
+      - g4dn.xlarge
+      - g4dn.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5a.large
+      - m5a.xlarge
+      - m5a.2xlarge
+      - m5a.4xlarge
+      - m5ad.large
+      - m5ad.xlarge
+      - m5ad.2xlarge
+      - m5ad.4xlarge
+      - m5d.large
+      - m5d.xlarge
+      - m5d.2xlarge
+      - m5d.4xlarge
+      - m5dn.large
+      - m5dn.xlarge
+      - m5dn.2xlarge
+      - m5dn.4xlarge
+      - m5n.large
+      - m5n.xlarge
+      - m5n.2xlarge
+      - m5n.4xlarge
+      - r5.large
+      - r5.xlarge
+      - r5.2xlarge
+      - r5.4xlarge
+      - r5a.large
+      - r5a.xlarge
+      - r5a.2xlarge
+      - r5a.4xlarge
+      - r5ad.large
+      - r5ad.xlarge
+      - r5ad.2xlarge
+      - r5ad.4xlarge
+      - r5d.large
+      - r5d.xlarge
+      - r5d.2xlarge
+      - r5d.4xlarge
+      - r5dn.large
+      - r5dn.xlarge
+      - r5dn.2xlarge
+      - r5n.large
+      - r5n.xlarge
+      - r5n.2xlarge
+      - r5n.4xlarge
+      - t3.nano
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
+      - t3a.nano
+      - t3a.micro
+      - t3a.small
+      - t3a.medium
+      - t3a.large
+      - t3a.xlarge
+      - t3a.2xlarge
+      - x2gd.medium
+      - x2gd.large
+      - x2gd.xlarge
+      - x2gd.2xlarge
+    Default: t3.micro
+    Description: Amazon EC2 Instance Type
+    Type: String
+
+  NotebookType:
+    Type: String
+    Description: Type of notebook software to install
+    Default: Rstudio
+    AllowedValues:
+      - Rstudio
+      - Jupyter
+
+  VolumeSize:
+    Description: The EC2 volume size (in GB)
+    Type: Number
+    Default: 50
+    MinValue: 50
+    MaxValue: 2000
+
+Resources:
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      ManagedPolicyArns:
+        - !ImportValue
+          'Fn::Sub': '${AWS::Region}-essentials-TagRootVolumePolicy'
+        - !ImportValue
+          'Fn::Sub': '${AWS::Region}-cfn-tag-instance-policy-TagInstancePolicy'
+        - !ImportValue
+          'Fn::Sub': '${AWS::Region}-get-role-policy-ReadAssumedRoleInformationPolicy'
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore' #For maintenance tasks
+        - !ImportValue
+          'Fn::Sub': '${AWS::Region}-sc-product-ec2-linux-notebook-write-to-ssm-policy-WriteToSSMPolicy'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - ssm.amazonaws.com #For maintenance service
+            Action:
+              - sts:AssumeRole
+
+  NotebookConnectSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - W1011
+    Properties:
+      GroupDescription: 'Add ingress to 443 from notebook connection ALB'
+      VpcId: !ImportValue
+        'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", VPCId]
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !ImportValue
+            'Fn::Sub': '${AWS::Region}-alb-notebook-access-ALBSecurityGroup'
+
+  TgwHubSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - W1011
+    Properties:
+      GroupDescription: 'Allow network access from TGW Hub'
+      VpcId: !ImportValue
+        'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", VPCId]
+      SecurityGroupIngress:
+        - CidrIp: "10.50.0.0/16"
+          FromPort: -1
+          ToPort: -1
+          IpProtocol: "-1"
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref 'InstanceRole'
+
+  # The EC2 instance writes to it, but this is introduced for the cleanup of the parameter
+  InstanceSSMParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      # This will need to be synced with the `packer-rstudio` project
+      Name: !Sub "/service-catalog/synapse/cred/${LinuxInstance}/oidc-accesstoken"
+      Type: String
+      Value: to be replaced by EC2
+
+  SSMParameterEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: key used to encrypt SSM Parameters for a EC2 instance
+      # number of days to wait before key gets deleted
+      PendingWindowInDays: 7
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+        # https://dev.to/jansonsa/aws-how-to-deny-access-to-resources-while-allowing-a-specific-role-547b
+        - Sid: "Deny decrypt to all Principals that shouldn't require access"
+          Effect: 'Deny'
+          Principal: "*"
+          Condition:
+            StringNotEquals:
+              "aws:PrincipalArn": !Sub "${InstanceRole.Arn}"
+          Action:
+            - kms:Decrypt
+          Resource: '*'
+        - Sid: Allow use of the key
+          Effect: Allow
+          Principal:
+            AWS: !Sub "${InstanceRole.Arn}"
+          Action:
+          - kms:DescribeKey
+          - kms:Encrypt
+          - kms:Decrypt
+          - kms:ReEncrypt*
+          - kms:GenerateDataKey
+          - kms:GenerateDataKeyWithoutPlaintext
+          Resource: '*'
+        - Sid: 'Default KMS Policy that enables IAM permissions'  # https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html#key-policy-default
+          Effect: 'Allow'
+          Principal:
+            AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+          Action:
+            - 'kms:*'
+          Resource: '*'
+        - Sid: "Allow administration of the key to CFN service role"
+          Effect: "Allow"
+          Principal:
+            AWS:
+              - !ImportValue
+                'Fn::Sub': '${AWS::Region}-sc-ec2vpc-launchrole-LaunchRoleArn'
+          Action:
+            - "kms:Create*"
+            - "kms:Describe*"
+            - "kms:Enable*"
+            - "kms:List*"
+            - "kms:Put*"
+            - "kms:Update*"
+            - "kms:Revoke*"
+            - "kms:Disable*"
+            - "kms:Get*"
+            - "kms:Delete*"
+            - "kms:ScheduleKeyDeletion"
+            - "kms:CancelKeyDeletion"
+          Resource: "*"
+
+  SSMParameterEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      # This will need to be synced with the `packer-rstudio` project
+      AliasName: !Sub 'alias/service-catalog/synapse/cred/${LinuxInstance}'
+      TargetKeyId: !Ref SSMParameterEncryptionKey
+
+  LinuxInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - E1022
+            - W1011
+      'AWS::CloudFormation::Init':
+        configSets:
+          StartContainersJupyter:
+            - start_docker_network
+            - start_reverse_proxy
+            - make_work_dir
+            - start_jupyter_notebook
+          StartContainersRstudio:
+            - start_docker_network
+            - start_reverse_proxy
+            - make_work_dir
+            - start_rstudio_notebook
+        start_docker_network:
+          commands:
+            start_docker_network:
+              command: "docker network create --driver bridge ${NETWORK_NAME}"
+              env:
+                NETWORK_NAME:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNetworkName]
+        start_reverse_proxy:
+          commands:
+            start_reverse_proxy:
+              command: "sudo docker start reverse-proxy || \
+                sudo docker run -d -p 443:443 \
+                --name reverse-proxy \
+                --network ${NETWORK_NAME} \
+                --restart unless-stopped \
+                -e EC2_INSTANCE_ID=${EC2_INSTANCE_ID} \
+                -e NOTEBOOK_HOST=${NOTEBOOK_CONTAINER_NAME} \
+                -e AWS_REGION=${AWS_REGION} \
+                -e SERVICE_CATALOG_PREFIX=${SERVICE_CATALOG_PREFIX} \
+                -e SSM_PARAMETER_SUFFIX=${SSM_PARAMETER_SUFFIX} \
+                ghcr.io/brucehoff/notebook-reverse-proxy-{NOTEBOOK_TYPE}:main" # TODO ghcr.io/sage-bionetworks/notebook-reverse-proxy-{NOTEBOOK_TYPE}:1.0
+              env:
+                EC2_INSTANCE_ID: Resources.LinuxInstance.Metadata.AWS::CloudFormation::Init
+                AWS_REGION: !Ref AWS::Region
+                NETWORK_NAME:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNetworkName]
+                NOTEBOOK_CONTAINER_NAME:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNotebookContainerName]
+                SERVICE_CATALOG_PREFIX: service-catalog/synapse/cred
+                SSM_PARAMETER_SUFFIX: oidc-accesstoken
+                NOTEBOOK_TYPE:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, NoteBookTypeForDocker]
+        make_work_dir:
+          commands:
+            make_work_dir:
+              command: |
+                mkdir -p ${EC2_WORK_DIR}
+                sudo chmod 777 ${EC2_WORK_DIR}
+              env:
+                EC2_WORK_DIR:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, EC2WorkDir]
+        start_jupyter_notebook:
+          commands:
+            start_notebook:
+              command: "sudo docker start ${NOTEBOOK_CONTAINER_NAME} || \
+                sudo docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
+                --restart unless-stopped \
+                -e DOCKER_STACKS_JUPYTER_CMD=notebook \
+                -v ${EC2_WORK_DIR}:${JUPYTER_WORK_DIR} \
+                --network ${NETWORK_NAME} ${DOCKER_IMAGE} \
+                start-notebook.py --IdentityProvider.token='' --NotebookApp.base_url=/${EC2_INSTANCE_ID} \
+                --notebook-dir=${JUPYTER_WORK_DIR}"
+              env:
+                EC2_INSTANCE_ID: Resources.LinuxInstance.Metadata.AWS::CloudFormation::Init
+                NETWORK_NAME:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNetworkName]
+                NOTEBOOK_CONTAINER_NAME:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNotebookContainerName]
+                EC2_WORK_DIR:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, EC2WorkDir]
+                DOCKER_IMAGE:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerImage]
+                JUPYTER_WORK_DIR: /home/jovyan/workdir
+        start_rstudio_notebook:
+          commands:
+            start_notebook:
+              command: "sudo docker start ${NOTEBOOK_CONTAINER_NAME} || \
+                sudo docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
+                --restart unless-stopped \
+                --network ${NETWORK_NAME} \
+                -e DISABLE_AUTH=true \
+                -v ${EC2_WORK_DIR}:/home/rstudio \
+                ${DOCKER_IMAGE}"
+              env:
+                EC2_INSTANCE_ID: Resources.LinuxInstance.Metadata.AWS::CloudFormation::Init
+                NETWORK_NAME:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNetworkName]
+                NOTEBOOK_CONTAINER_NAME:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNotebookContainerName]
+                DOCKER_IMAGE:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerImage]
+                EC2_WORK_DIR:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, EC2WorkDir]
+
+    Properties:
+      ImageId: "ami-0b710e028cd5ff838" # https://github.com/Sage-Bionetworks-IT/packer-base-ubuntu-jammy/tree/v1.0.0
+      InstanceType: !Ref 'EC2InstanceType'
+      SubnetId: !ImportValue
+          'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", PrivateSubnet]
+      SecurityGroupIds:
+        - !ImportValue
+          'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", VpnSecurityGroup]
+        - !Ref NotebookConnectSecurityGroup
+        - !Ref TgwHubSecurityGroup
+      KeyName: 'scipool'
+      BlockDeviceMappings:
+        -
+          DeviceName: "/dev/sda1"
+          Ebs:
+            DeleteOnTermination: true
+            VolumeSize: !Ref VolumeSize
+            Encrypted: true
+      IamInstanceProfile: !Ref 'InstanceProfile'
+      UserData:
+        Fn::Base64: !Sub
+          -  |
+            #!/bin/bash
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets ${ConfigSet} --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource LinuxInstance --region ${AWS::Region}
+          - ConfigSet: !FindInMap [NotebookTypeToInitParams, !Ref NotebookType, ConfigSet]
+      Tags:
+        - Key: Name
+          Value: !Ref 'AWS::StackName'
+        - Key: Description
+          Value: !Sub "Service Catalog instance created by ${AWS::StackName}"
+        - Key: "ManagedInstanceMaintenanceTarget"
+          Value: "yes"
+        - Key: "PatchGroup"
+          Value: "prod-default"
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT20M
+
+  EC2TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - W1011
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 15
+      HealthyThresholdCount: 5
+      Matcher:
+        HttpCode: '200'
+      Port: 443
+      Protocol: HTTPS
+      TargetGroupAttributes:
+      - Key: deregistration_delay.timeout_seconds
+        Value: '20'
+      Targets:
+      - Id: !Ref LinuxInstance
+        Port: 443
+      UnhealthyThresholdCount: 3
+      VpcId: !ImportValue
+          'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", VPCId]
+      Tags:
+      - Key: Name
+        Value: !Sub 'TargetGroup-${LinuxInstance}'
+
+  AlbListenerRule:
+    Type: Custom::ALBListenerRule
+    Properties:
+      ServiceToken: !ImportValue
+        'Fn::Sub': '${AWS::Region}-cfn-cr-alb-rule-FunctionArn'
+      InstanceId: !Ref LinuxInstance
+      TargetGroupArn: !Ref EC2TargetGroup
+      ListenerArn: !ImportValue
+        'Fn::Sub': '${AWS::Region}-alb-notebook-access-ALBListenerARN'
+  TagInstance:
+    DependsOn: "InstanceProfile"
+    Type: Custom::SynapseTagger
+    Properties:
+      ServiceToken: !ImportValue
+        'Fn::Sub': '${AWS::Region}-cfn-cr-synapse-tagger-SetInstanceTagsFunctionArn'
+      InstanceId: !Ref LinuxInstance
+Outputs:
+  LinuxInstanceId:
+    Description: 'The ID of the EC2 instance'
+    Value: !Ref 'LinuxInstance'
+  LinuxInstancePrivateIpAddress:
+    Description: 'The IP Address of the EC2 instance'
+    Value: !GetAtt 'LinuxInstance.PrivateIp'
+  EC2InstanceType:
+    Description: 'The EC2 instance type'
+    Value: !Ref 'EC2InstanceType'
+  ConnectionInstructions:
+    Description: 'Guidelines on connecting to instances'
+    Value: "https://sagebionetworks.jira.com/wiki/spaces/IT/pages/996376579/Connect+to+Provisioned+Instances"
+  ConnectionURI:
+    Description: 'Starts a shell session in the AWS Console'
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/systems-manager/session-manager/${LinuxInstance}?region=${AWS::Region}"
+  EC2ConsoleURI:
+    Description: 'Check your instance status with this link to the AWS Console'
+    Value: !Sub "https://console.aws.amazon.com/ec2/v2/home?region=${AWS::Region}#Instances:search=${LinuxInstance}"
+  NotebookConnectionURI:
+    Description: 'Notebook server login page'
+    Value: !Sub
+      - '${ALBConnectionURI}/${Path}/'
+      - ALBConnectionURI: !ImportValue
+          'Fn::Sub': '${AWS::Region}-alb-notebook-access-ConnectionURI'
+        Path: !Ref LinuxInstance
+  Documentation:
+    Description: 'Service Catalog Documentation'
+    Value: "https://help.sc.sageit.org/sc/Service-Catalog-Provisioning.938836322.html"
