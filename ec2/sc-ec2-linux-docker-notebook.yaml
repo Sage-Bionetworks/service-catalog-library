@@ -325,7 +325,9 @@ Resources:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNetworkName]
         start_reverse_proxy:
           commands:
-            start_reverse_proxy:
+            01_retrieve_instance_id:
+              command: export EC2_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+            02_start_reverse_proxy:
               command: "docker start reverse-proxy || \
                 sudo docker run -d -p 443:443 \
                 --name reverse-proxy \
@@ -338,7 +340,6 @@ Resources:
                 -e SSM_PARAMETER_SUFFIX=${SSM_PARAMETER_SUFFIX} \
                 ghcr.io/brucehoff/notebook-reverse-proxy-${NOTEBOOK_TYPE}:main" # TODO ghcr.io/sage-bionetworks/notebook-reverse-proxy-{NOTEBOOK_TYPE}:1.0
               env:
-                EC2_INSTANCE_ID: Resources.LinuxInstance.Metadata.AWS::CloudFormation::Init
                 AWS_REGION: !Ref AWS::Region
                 NETWORK_NAME:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNetworkName]
@@ -359,7 +360,9 @@ Resources:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, EC2WorkDir]
         start_jupyter_notebook:
           commands:
-            start_notebook:
+            01_retrieve_instance_id:
+              command: export EC2_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+            02_start_notebook:
               command: "docker start ${NOTEBOOK_CONTAINER_NAME} || \
                 docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
                 --restart unless-stopped \
@@ -369,7 +372,6 @@ Resources:
                 start-notebook.py --IdentityProvider.token='' --NotebookApp.base_url=/${EC2_INSTANCE_ID} \
                 --notebook-dir=${JUPYTER_WORK_DIR}"
               env:
-                EC2_INSTANCE_ID: Resources.LinuxInstance.Metadata.AWS::CloudFormation::Init
                 NETWORK_NAME:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNetworkName]
                 NOTEBOOK_CONTAINER_NAME:
@@ -381,7 +383,9 @@ Resources:
                 JUPYTER_WORK_DIR: /home/jovyan/workdir
         start_rstudio_notebook:
           commands:
-            start_notebook:
+            01_retrieve_instance_id:
+              command: export EC2_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+            02_start_notebook:
               command: "docker start ${NOTEBOOK_CONTAINER_NAME} || \
                 docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
                 --restart unless-stopped \
@@ -390,7 +394,6 @@ Resources:
                 -v ${EC2_WORK_DIR}:/home/rstudio \
                 ${DOCKER_IMAGE}"
               env:
-                EC2_INSTANCE_ID: Resources.LinuxInstance.Metadata.AWS::CloudFormation::Init
                 NETWORK_NAME:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNetworkName]
                 NOTEBOOK_CONTAINER_NAME:
