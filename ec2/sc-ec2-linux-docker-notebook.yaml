@@ -342,6 +342,7 @@ Resources:
                 ghcr.io/brucehoff/notebook-reverse-proxy-${NOTEBOOK_TYPE}:main" # TODO ghcr.io/sage-bionetworks/notebook-reverse-proxy-{NOTEBOOK_TYPE}:1.0
               env:
                 AWS_REGION: !Ref AWS::Region
+                EC2_INSTANCE_ID: ${EC2_INSTANCE_ID}
                 NETWORK_NAME:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNetworkName]
                 NOTEBOOK_CONTAINER_NAME:
@@ -373,6 +374,7 @@ Resources:
                 start-notebook.py --IdentityProvider.token='' --NotebookApp.base_url=/${EC2_INSTANCE_ID} \
                 --notebook-dir=${JUPYTER_WORK_DIR}"
               env:
+               EC2_INSTANCE_ID: ${EC2_INSTANCE_ID}
                 NETWORK_NAME:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNetworkName]
                 NOTEBOOK_CONTAINER_NAME:
@@ -384,9 +386,7 @@ Resources:
                 JUPYTER_WORK_DIR: /home/jovyan/workdir
         start_rstudio_notebook:
           commands:
-            01_retrieve_instance_id:
-              command: export EC2_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
-            02_start_notebook:
+            start_notebook:
               command: "docker start ${NOTEBOOK_CONTAINER_NAME} || \
                 docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
                 --restart unless-stopped \
