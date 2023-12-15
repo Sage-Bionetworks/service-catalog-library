@@ -319,7 +319,8 @@ Resources:
         start_docker_network:
           commands:
             start_docker_network:
-              command: "docker network create --driver bridge ${NETWORK_NAME}"
+              command: "docker network inspect ${NETWORK_NAME} ||  \
+                docker network create --driver bridge ${NETWORK_NAME}"
               env:
                 NETWORK_NAME:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerNetworkName]
@@ -426,8 +427,8 @@ Resources:
         Fn::Base64: !Sub
           -  |
             #!/bin/bash
-            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets ${ConfigSet} --region ${AWS::Region}
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource LinuxInstance --region ${AWS::Region}
+            cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets ${ConfigSet} --region ${AWS::Region}
+            cfn-signal -e $? --stack ${AWS::StackName} --resource LinuxInstance --region ${AWS::Region}
           - ConfigSet: !FindInMap [NotebookTypeToInitParams, !Ref NotebookType, ConfigSet]
       Tags:
         - Key: Name
