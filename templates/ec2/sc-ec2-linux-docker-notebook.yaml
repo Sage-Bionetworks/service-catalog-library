@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Service Catalog: Notebook Linux EC2'
+Description: 'Service Catalog: Docker Notebook EC2'
 Metadata:
   cfn-lint:
     config:
@@ -22,95 +22,34 @@ Metadata:
         default: Disk Size
 
 Mappings:
-  NotebookTypes:
-    Rstudio:
-      AMIID: "ami-0588ce2d8084e56be" # https://github.com/Sage-Bionetworks-IT/packer-rstudio/tree/v2.1.3
   AccountToImportParams:
     'Fn::Transform':
       Name: 'AWS::Include'
       Parameters:
         # include is @ https://github.com/Sage-Bionetworks/admincentral-infra/blob/master/templates/cfn-service-catalog-snippets.yaml
         Location: s3://cfn-snippets-bucket-cloudformationsnippetsbucket-elu83sv8ocdz/scipool-sc-lib-infra/ScAccountToExportMappping.yaml
+  NotebookTypeToInitParams:
+    Jupyter:
+      NoteBookTypeForDocker: jupyter
+      ConfigSet: StartContainersJupyter
+      DockerImage: quay.io/jupyter/base-notebook:python-3.11
+      EC2WorkDir: /home/ssm-user/workdir
+    Rstudio:
+      NoteBookTypeForDocker: rstudio
+      ConfigSet: StartContainersRstudio
+      DockerImage: rocker/rstudio:4.3.2
+      EC2WorkDir: /home/ssm-user/workdir
+  GlobalVars:
+    DockerNetworkName: proxy-net
+    NotebookContainerName: notebook
+    SSMParameterPrefix: service-catalog/synapse/cred
+    SSMParameterSuffix: oidc-accesstoken
+        
 
 Parameters:
 
   EC2InstanceType:
     AllowedValues:
-      - c5.large
-      - c5.xlarge
-      - c5.2xlarge
-      - c5.4xlarge
-      - c5d.large
-      - c5d.xlarge
-      - c5d.2xlarge
-      - c5d.4xlarge
-      - c5n.large
-      - c5n.xlarge
-      - c5n.2xlarge
-      - c5n.4xlarge
-      - i3en.large
-      - i3en.xlarge
-      - i3en.2xlarge
-      - g4dn.xlarge
-      - g4dn.2xlarge
-      - m4.large
-      - m4.xlarge
-      - m4.2xlarge
-      - m4.4xlarge
-      - m5.large
-      - m5.xlarge
-      - m5.2xlarge
-      - m5.4xlarge
-      - m5a.large
-      - m5a.xlarge
-      - m5a.2xlarge
-      - m5a.4xlarge
-      - m5ad.large
-      - m5ad.xlarge
-      - m5ad.2xlarge
-      - m5ad.4xlarge
-      - m5d.large
-      - m5d.xlarge
-      - m5d.2xlarge
-      - m5d.4xlarge
-      - m5dn.large
-      - m5dn.xlarge
-      - m5dn.2xlarge
-      - m5dn.4xlarge
-      - m5n.large
-      - m5n.xlarge
-      - m5n.2xlarge
-      - m5n.4xlarge
-      - r5.large
-      - r5.xlarge
-      - r5.2xlarge
-      - r5.4xlarge
-      - r5a.large
-      - r5a.xlarge
-      - r5a.2xlarge
-      - r5a.4xlarge
-      - r5ad.large
-      - r5ad.xlarge
-      - r5ad.2xlarge
-      - r5ad.4xlarge
-      - r5d.large
-      - r5d.xlarge
-      - r5d.2xlarge
-      - r5d.4xlarge
-      - r5dn.large
-      - r5dn.xlarge
-      - r5dn.2xlarge
-      - r5n.large
-      - r5n.xlarge
-      - r5n.2xlarge
-      - r5n.4xlarge
-      - t3.nano
-      - t3.micro
-      - t3.small
-      - t3.medium
-      - t3.large
-      - t3.xlarge
-      - t3.2xlarge
       - t3a.nano
       - t3a.micro
       - t3a.small
@@ -118,11 +57,25 @@ Parameters:
       - t3a.large
       - t3a.xlarge
       - t3a.2xlarge
-      - x2gd.medium
-      - x2gd.large
-      - x2gd.xlarge
-      - x2gd.2xlarge
-    Default: t3.micro
+      - m6a.large
+      - m6a.xlarge
+      - m6a.2xlarge
+      - m6a.4xlarge
+      - m6a.8xlarge
+      - c6a.large
+      - c6a.xlarge
+      - c6a.2xlarge
+      - c6a.4xlarge
+      - c6a.8xlarge
+      - r6a.large
+      - r6a.xlarge
+      - r6a.2xlarge
+      - r6a.4xlarge
+      - r6a.8xlarge
+      - g5.xlarge
+      - g5.2xlarge
+      - g5.4xlarge
+    Default: t3a.small
     Description: Amazon EC2 Instance Type
     Type: String
 
@@ -132,12 +85,13 @@ Parameters:
     Default: Rstudio
     AllowedValues:
       - Rstudio
+      - Jupyter
 
   VolumeSize:
     Description: The EC2 volume size (in GB)
     Type: Number
-    Default: 16
-    MinValue: 16
+    Default: 50
+    MinValue: 50
     MaxValue: 2000
 
 Resources:
@@ -212,8 +166,12 @@ Resources:
   InstanceSSMParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      # This will need to be synced with the `packer-rstudio` project
-      Name: !Sub "/service-catalog/synapse/cred/${LinuxInstance}/oidc-accesstoken"
+      Name: !Sub 
+        - "/${SSMParameterPrefix}/${LinuxInstance}/${SSMParameterSuffix}"
+        - SSMParameterPrefix: 
+            'Fn::FindInMap': [GlobalVars, SSMParameterPrefix]
+          SSMParameterSuffix: 
+            'Fn::FindInMap': [GlobalVars, SSMParameterSuffix]
       Type: String
       Value: to be replaced by EC2
 
@@ -223,6 +181,7 @@ Resources:
       Description: key used to encrypt SSM Parameters for a EC2 instance
       # number of days to wait before key gets deleted
       PendingWindowInDays: 7
+      EnableKeyRotation: "true"
       KeyPolicy:
         Version: "2012-10-17"
         Statement:
@@ -279,8 +238,10 @@ Resources:
   SSMParameterEncryptionKeyAlias:
     Type: AWS::KMS::Alias
     Properties:
-      # This will need to be synced with the `packer-rstudio` project
-      AliasName: !Sub 'alias/service-catalog/synapse/cred/${LinuxInstance}'
+      AliasName: !Sub 
+        - 'alias/${SSMParameterPrefix}/${LinuxInstance}'
+        - SSMParameterPrefix: 
+            'Fn::FindInMap': [GlobalVars, SSMParameterPrefix]
       TargetKeyId: !Ref SSMParameterEncryptionKey
 
   LinuxInstance:
@@ -293,107 +254,135 @@ Resources:
             - W1011
       'AWS::CloudFormation::Init':
         configSets:
-          SetupCfn:
-            - cfn_hup_service
-          SetEnv:
-            - set_env_vars
-          SetupApacheProxy:
-            - write_apache_conf
-          SetupSynapseCredEnv:
-            - write_synapse_env
-        cfn_hup_service:
-          files:
-            /etc/cfn/cfn-hup.conf:
-              content: !Sub |
-                [main]
-                stack=${AWS::StackId}
-                region=${AWS::Region}
-                verbose=true
-                interval=5
-              mode: "000400"
-              owner: root
-              group: root
-            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-              content: !Sub |
-                [cfn-auto-reloader-hook]
-                triggers=post.update
-                path=Resources.LinuxInstance.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets SetupCfn,SetEnv,SetupApacheProxy,SetupSynapseCredEnv --region ${AWS::Region}
-              mode: "000400"
-              owner: root
-              group: root
-            /lib/systemd/system/cfn-hup.service:
-              content: |
-                [Unit]
-                Description=cfn-hup daemon
-
-                [Service]
-                Type=simple
-                ExecStart=/opt/aws/bin/cfn-hup
-                Restart=always
-
-                [Install]
-                WantedBy=multi-user.target
-              mode: "000400"
-              owner: root
-              group: root
+          StartContainersJupyter:
+            - start_docker_network
+            - start_reverse_proxy
+            - make_work_dir
+            - start_jupyter_notebook
+          StartContainersRstudio:
+            - start_docker_network
+            - start_reverse_proxy
+            - make_work_dir
+            - start_rstudio_notebook
+            - inject_r_env_vars
+        start_docker_network:
           commands:
-            01_enable_cfn-hup:
-              command: "/bin/systemctl enable cfn-hup.service"
-            02_start_cfn-hup:
-              command: "/bin/systemctl start cfn-hup.service"
-        set_env_vars:
-          files:
-            /opt/sage/bin/make_env_vars_file.sh:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.9/linux/opt/sage/bin/make_env_vars_file.sh"
-              mode: "00744"
-              owner: "root"
-              group: "root"
+            start_docker_network:
+              command: "docker network inspect ${NETWORK_NAME} ||  \
+                docker network create --driver bridge ${NETWORK_NAME}"
+              env:
+                NETWORK_NAME:
+                  'Fn::FindInMap': [GlobalVars, DockerNetworkName]
+        start_reverse_proxy:
           commands:
-            01_make_env_vars_file:
-              command: "/bin/bash /opt/sage/bin/make_env_vars_file.sh"
+            start_reverse_proxy:
+              # For idempotency this command tries to restart an existing container and only creates one if that fails.
+              command: "docker start reverse-proxy || \
+                docker run -d -p 443:443 \
+                --name reverse-proxy \
+                --network ${NETWORK_NAME} \
+                --restart unless-stopped \
+                -e EC2_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id) \
+                -e NOTEBOOK_HOST=${NOTEBOOK_CONTAINER_NAME} \
+                -e AWS_REGION=${AWS_REGION} \
+                -e SERVICE_CATALOG_PREFIX=${SERVICE_CATALOG_PREFIX} \
+                -e SSM_PARAMETER_SUFFIX=${SSM_PARAMETER_SUFFIX} \
+                ghcr.io/Sage-Bionetworks-IT/notebook-reverse-proxy-${NOTEBOOK_TYPE}:1.0"
               env:
                 AWS_REGION: !Ref AWS::Region
-                STACK_NAME: !Ref AWS::StackName
-                STACK_ID: !Ref AWS::StackId
-        write_apache_conf:
-          files:
-            /opt/sage/bin/apache_conf_rewrite.sh:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.9/linux/opt/sage/bin/apache_conf_rewrite.sh"
-              mode: "00744"
-              owner: "root"
-              group: "root"
+                NETWORK_NAME:
+                  'Fn::FindInMap': [GlobalVars, DockerNetworkName]
+                NOTEBOOK_CONTAINER_NAME:
+                  'Fn::FindInMap': [GlobalVars, NotebookContainerName]
+                SERVICE_CATALOG_PREFIX:
+                  'Fn::FindInMap': [GlobalVars, SSMParameterPrefix]
+                SSM_PARAMETER_SUFFIX:
+                  'Fn::FindInMap': [GlobalVars, SSMParameterSuffix]
+                NOTEBOOK_TYPE:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, NoteBookTypeForDocker]
+        make_work_dir:
           commands:
-            01_rewrite_apache_conf:
-              command: "/bin/bash /opt/sage/bin/apache_conf_rewrite.sh"
-        write_synapse_env:
-          files:
-            /opt/sage/bin/apache_synapse_cred_env.sh:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.9/linux/opt/sage/bin/apache_synapse_cred_env.sh"
-              mode: "00744"
-              owner: "root"
-              group: "root"
-            /opt/sage/bin/rstudio_synapse_cred_env.sh:
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v1.0.9/linux/opt/sage/bin/rstudio_synapse_cred_env.sh"
-              mode: "00744"
-              owner: "root"
-              group: "root"
+            make_work_dir:
+              command: |
+                mkdir -p ${EC2_WORK_DIR}
+                sudo chmod 777 ${EC2_WORK_DIR}
+              env:
+                EC2_WORK_DIR:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, EC2WorkDir]
+        start_jupyter_notebook:
           commands:
-            01_write_apache_env:
-              command: "/bin/bash /opt/sage/bin/apache_synapse_cred_env.sh"
+            start_notebook:
+              # For idempotency this command tries to restart an existing container and only creates one if that fails.
+              command: |
+                EC2_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+                SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME=/${SERVICE_CATALOG_PREFIX}/${EC2_INSTANCE_ID}/${SSM_PARAMETER_SUFFIX}
+                "docker start ${NOTEBOOK_CONTAINER_NAME} || \
+                docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
+                --restart unless-stopped \
+                -e DOCKER_STACKS_JUPYTER_CMD=notebook \
+                -e SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME=${SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME} \
+                -e AWS_DEFAULT_REGION=${AWS_REGION} \
+                -v ${EC2_WORK_DIR}:${JUPYTER_WORK_DIR} \
+                --network ${NETWORK_NAME} ${DOCKER_IMAGE} \
+                start-notebook.py --IdentityProvider.token='' --NotebookApp.base_url=/${EC2_INSTANCE_ID} \
+                --notebook-dir=${JUPYTER_WORK_DIR}"
               env:
-                # Sync w/ InstanceSSMParameter and SSMParameterEncryptionKey
-                SERVICE_CATALOG_PREFIX: "service-catalog/synapse/cred"
-                SSM_PARAMETER_SUFFIX: "oidc-accesstoken"
-            02_write_rstudio_env:
-              command: "/bin/bash /opt/sage/bin/rstudio_synapse_cred_env.sh"
+                NETWORK_NAME:
+                  'Fn::FindInMap': [GlobalVars, DockerNetworkName]
+                NOTEBOOK_CONTAINER_NAME:
+                  'Fn::FindInMap': [GlobalVars, NotebookContainerName]
+                EC2_WORK_DIR:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, EC2WorkDir]
+                DOCKER_IMAGE:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerImage]
+                JUPYTER_WORK_DIR: /home/jovyan/workdir
+        start_rstudio_notebook:
+          commands:
+            start_notebook:
+              # For idempotency this command tries to restart an existing container and only creates one if that fails.
+              command: "docker start ${NOTEBOOK_CONTAINER_NAME} || \
+                docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
+                --restart unless-stopped \
+                --network ${NETWORK_NAME} \
+                -e DISABLE_AUTH=true \
+                -v ${EC2_WORK_DIR}:${RSTUDIO_WORK_DIR} \
+                ${DOCKER_IMAGE}"
               env:
-                # Sync w/ InstanceSSMParameter and SSMParameterEncryptionKey
-                SERVICE_CATALOG_PREFIX: "service-catalog/synapse/cred"
-                SSM_PARAMETER_SUFFIX: "oidc-accesstoken"
+                NETWORK_NAME:
+                  'Fn::FindInMap': [GlobalVars, DockerNetworkName]
+                NOTEBOOK_CONTAINER_NAME:
+                  'Fn::FindInMap': [GlobalVars, NotebookContainerName]
+                DOCKER_IMAGE:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerImage]
+                EC2_WORK_DIR:
+                  'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, EC2WorkDir]
+                RSTUDIO_WORK_DIR: /home/rstudio
+                SERVICE_CATALOG_PREFIX:
+                  'Fn::FindInMap': [GlobalVars, SSMParameterPrefix]
+                SSM_PARAMETER_SUFFIX:
+                  'Fn::FindInMap': [GlobalVars, SSMParameterSuffix]
+                AWS_REGION:
+                  'Fn::Sub': '${AWS::Region}
+        inject_r_env_vars:
+          commands:
+            inject_r_env_vars:
+               command: |
+                 EC2_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+                 SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME=/${SERVICE_CATALOG_PREFIX}/${EC2_INSTANCE_ID}/${SSM_PARAMETER_SUFFIX}
+                 docker exec ${NOTEBOOK_CONTAINER_NAME} echo "SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME=${SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME}" >> /etc/R/Renviron.site
+                 docker exec ${NOTEBOOK_CONTAINER_NAME} echo "AWS_DEFAULT_REGION=${AWS_REGION}" >> /etc/R/Renviron.site
+              env:
+                NOTEBOOK_CONTAINER_NAME:
+                  'Fn::FindInMap': [GlobalVars, NotebookContainerName]
+                SERVICE_CATALOG_PREFIX:
+                  'Fn::FindInMap': [GlobalVars, SSMParameterPrefix]
+                SSM_PARAMETER_SUFFIX:
+                  'Fn::FindInMap': [GlobalVars, SSMParameterSuffix]
+                AWS_REGION:
+                  'Fn::Sub': '${AWS::Region}
 
     Properties:
-      ImageId: !FindInMap [NotebookTypes, !Ref NotebookType, AMIID]
+      ImageId: "ami-0b710e028cd5ff838" # https://github.com/Sage-Bionetworks-IT/packer-base-ubuntu-jammy/tree/v1.0.0
       InstanceType: !Ref 'EC2InstanceType'
       SubnetId: !ImportValue
           'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", PrivateSubnet]
@@ -412,10 +401,13 @@ Resources:
             Encrypted: true
       IamInstanceProfile: !Ref 'InstanceProfile'
       UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets SetupCfn,SetEnv,SetupApacheProxy,SetupSynapseCredEnv --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource LinuxInstance --region ${AWS::Region}
+        Fn::Base64: !Sub
+          -  |
+            #!/bin/bash
+            cfn-init -v --stack ${AWS::StackName} --resource LinuxInstance --configsets ${ConfigSet} --region ${AWS::Region}
+            cfn-signal -e $? --stack ${AWS::StackName} --resource LinuxInstance --region ${AWS::Region}
+          - ConfigSet: !FindInMap [NotebookTypeToInitParams, !Ref NotebookType, ConfigSet]
+      PropagateTagsToVolumeOnCreation: true
       Tags:
         - Key: Name
           Value: !Ref 'AWS::StackName'
@@ -484,9 +476,6 @@ Outputs:
   EC2InstanceType:
     Description: 'The EC2 instance type'
     Value: !Ref 'EC2InstanceType'
-  ConnectionInstructions:
-    Description: 'Guidelines on connecting to instances'
-    Value: "https://sagebionetworks.jira.com/wiki/spaces/IT/pages/996376579/Connect+to+Provisioned+Instances"
   ConnectionURI:
     Description: 'Starts a shell session in the AWS Console'
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/systems-manager/session-manager/${LinuxInstance}?region=${AWS::Region}"
