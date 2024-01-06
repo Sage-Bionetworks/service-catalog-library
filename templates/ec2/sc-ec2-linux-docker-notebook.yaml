@@ -282,7 +282,7 @@ Resources:
               # For idempotency this command tries to restart an existing container and only creates one if that fails.
               command: >
                 docker start reverse-proxy ||
-                docker run -d -p 443:443 --memory=100m --cpus=.5
+                docker run -d -p 443:443 --memory=1g --cpus=1
                 --name reverse-proxy
                 --network ${NETWORK_NAME}
                 --restart unless-stopped
