@@ -267,7 +267,6 @@ Resources:
             - start_reverse_proxy
             - make_work_dir
             - start_rstudio_notebook
-            - inject_r_env_vars
         start_docker_network:
           commands:
             start_docker_network:
@@ -283,7 +282,7 @@ Resources:
               # For idempotency this command tries to restart an existing container and only creates one if that fails.
               command: >
                 docker start reverse-proxy ||
-                docker run -d -p 443:443
+                docker run -d -p 443:443 --memory=100m --cpus=.5
                 --name reverse-proxy
                 --network ${NETWORK_NAME}
                 --restart unless-stopped
@@ -292,7 +291,7 @@ Resources:
                 -e AWS_REGION=${AWS_REGION}
                 -e SERVICE_CATALOG_PREFIX=${SERVICE_CATALOG_PREFIX}
                 -e SSM_PARAMETER_SUFFIX=${SSM_PARAMETER_SUFFIX}
-                ghcr.io/brucehoff/it-notebook-reverse-proxy-${NOTEBOOK_TYPE}:main
+                ghcr.io/Sage-Bionetworks-IT/notebook-reverse-proxy-${NOTEBOOK_TYPE}:1.0
               env:
                 AWS_REGION: !Ref AWS::Region
                 NETWORK_NAME:
@@ -350,14 +349,18 @@ Resources:
         start_rstudio_notebook:
           commands:
             start_notebook:
-              # For idempotency this command tries to restart an existing container and only creates one if that fails.
-              command: >
-                docker start ${NOTEBOOK_CONTAINER_NAME} ||
-                docker run -d --name ${NOTEBOOK_CONTAINER_NAME}
-                --restart unless-stopped
-                --network ${NETWORK_NAME}
-                -e DISABLE_AUTH=true
-                -v ${EC2_WORK_DIR}:${RSTUDIO_WORK_DIR}
+              command: |
+                EC2_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+                SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME=/${SERVICE_CATALOG_PREFIX}/${EC2_INSTANCE_ID}/${SSM_PARAMETER_SUFFIX}
+                # For idempotency this command tries to restart an existing container and only creates one if that fails.
+                docker start ${NOTEBOOK_CONTAINER_NAME} || \
+                docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
+                --restart unless-stopped \
+                --network ${NETWORK_NAME} \
+                -e DISABLE_AUTH=true \
+                -e SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME=${SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME} \
+                -e AWS_DEFAULT_REGION=${AWS_REGION} \
+                -v ${EC2_WORK_DIR}:${RSTUDIO_WORK_DIR} \
                 ${DOCKER_IMAGE}
               env:
                 NETWORK_NAME:
@@ -369,17 +372,6 @@ Resources:
                 EC2_WORK_DIR:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, EC2WorkDir]
                 RSTUDIO_WORK_DIR: /home/rstudio
-        inject_r_env_vars:
-          commands:
-            inject_r_env_vars:
-              command: |
-                EC2_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
-                SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME=/${SERVICE_CATALOG_PREFIX}/${EC2_INSTANCE_ID}/${SSM_PARAMETER_SUFFIX}
-                docker exec ${NOTEBOOK_CONTAINER_NAME} bash -c "echo SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME=${SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME} >> /etc/R/Renviron.site"
-                docker exec ${NOTEBOOK_CONTAINER_NAME} bash -c "echo AWS_DEFAULT_REGION=${AWS_REGION} >> /etc/R/Renviron.site"
-              env:
-                NOTEBOOK_CONTAINER_NAME:
-                  'Fn::FindInMap': [GlobalVars, NotebookContainerName, Value]
                 SERVICE_CATALOG_PREFIX:
                   'Fn::FindInMap': [GlobalVars, SSMParameterPrefix, Value]
                 SSM_PARAMETER_SUFFIX:
