@@ -33,12 +33,12 @@ Mappings:
       NoteBookTypeForDocker: jupyter
       ConfigSet: StartContainersJupyter
       DockerImage: quay.io/jupyter/base-notebook:python-3.11
-      EC2WorkDir: /home/ssm-user/workdir
+      EC2WorkDir: /home/ssm-user/work
     Rstudio:
       NoteBookTypeForDocker: rstudio
       ConfigSet: StartContainersRstudio
-      DockerImage: ghcr.io/sage-bionetworks-it/rstudio-service-catalog:v1.0.0
-      EC2WorkDir: /home/ssm-user/workdir
+      DockerImage: ghcr.io/sage-bionetworks-it/rstudio-service-catalog:v1.0.1
+      EC2WorkDir: /home/ssm-user/work
   GlobalVars:
     DockerNetworkName:
       Value: proxy-net
@@ -358,7 +358,7 @@ Resources:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, EC2WorkDir]
                 DOCKER_IMAGE:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerImage]
-                JUPYTER_WORK_DIR: /home/jovyan/workdir
+                JUPYTER_WORK_DIR: /home/jovyan/work
                 SERVICE_CATALOG_PREFIX:
                   'Fn::FindInMap': [GlobalVars, SSMParameterPrefix, Value]
                 SSM_PARAMETER_SUFFIX:
@@ -390,7 +390,7 @@ Resources:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, DockerImage]
                 EC2_WORK_DIR:
                   'Fn::FindInMap': [NotebookTypeToInitParams, !Ref NotebookType, EC2WorkDir]
-                RSTUDIO_WORK_DIR: /home/rstudio
+                RSTUDIO_WORK_DIR: /home/rstudio/work
                 SERVICE_CATALOG_PREFIX:
                   'Fn::FindInMap': [GlobalVars, SSMParameterPrefix, Value]
                 SSM_PARAMETER_SUFFIX:
