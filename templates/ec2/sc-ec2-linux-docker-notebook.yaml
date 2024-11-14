@@ -262,14 +262,12 @@ Resources:
             - set_env_vars
             - start_docker_network
             - start_reverse_proxy
-            - make_work_dir
             - start_jupyter_notebook
             - start_watchtower
           StartContainersRstudio:
             - set_env_vars
             - start_docker_network
             - start_reverse_proxy
-            - make_work_dir
             - start_rstudio_notebook
             - start_watchtower
         set_env_vars:
