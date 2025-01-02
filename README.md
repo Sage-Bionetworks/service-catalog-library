@@ -29,12 +29,15 @@ In order to test a change to a template, the template to test needs
 to be uploaded to S3, and then a service catalog product needs to
 be configured to use the test template.
 
-The deploy pipeline will run on branches that begin with `test/`
-and will upload the templates to S3 in a directory named after the
-branch name.
+This process has been automated by running the deploy pipeline on
+branches that begin with `test/`, which will upload the templates
+to S3 in a directory named after the branch name. Automating the
+process increases consistency and accuracy of the tests, and
+reduces the impact of potential human error.
 
-Then a PR can be made to `organizations-infra` to create or update
-a service catalog product that references the test template, like in [this PR](https://github.com/Sage-Bionetworks-IT/organizations-infra/pull/1109/files).
+Once a test template has been uploaded to S3, a PR can be made
+to `organizations-infra` to create or update a service catalog
+product that references the test template, like in [this PR](https://github.com/Sage-Bionetworks-IT/organizations-infra/pull/1109/files).
 This process is outlined [in scipool documentation in `organizations-infra`](https://github.com/Sage-Bionetworks-IT/organizations-infra/tree/master/sceptre/scipool/README.md)
 and existing templates can be found in the individual [sceptre templates in `organiationss-infra`](https://github.com/Sage-Bionetworks-IT/organizations-infra/tree/master/sceptre/scipool/config/develop).
 
