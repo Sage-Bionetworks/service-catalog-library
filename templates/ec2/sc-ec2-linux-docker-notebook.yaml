@@ -5,6 +5,7 @@ Metadata:
     config:
       ignore_checks:
         - E7001
+        - W6001
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -155,8 +156,6 @@ Resources:
         'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", VPCId]
       SecurityGroupIngress:
         - CidrIp: "10.50.0.0/16"
-          FromPort: -1
-          ToPort: -1
           IpProtocol: "-1"
 
   InstanceProfile:
@@ -274,7 +273,7 @@ Resources:
           files:
             /opt/sage/bin/make_env_vars_file.sh:
               source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v2.0.3/linux/opt/sage/bin/make_env_vars_file.sh"
-              mode: "00744"
+              mode: "000744"
               owner: "root"
               group: "root"
           commands:

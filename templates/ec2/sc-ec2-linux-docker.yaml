@@ -86,8 +86,6 @@ Resources:
         'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", VPCId]
       SecurityGroupIngress:
         - CidrIp: "10.50.0.0/16"
-          FromPort: -1
-          ToPort: -1
           IpProtocol: "-1"
   InstanceRole:
     Type: AWS::IAM::Role
@@ -176,7 +174,7 @@ Resources:
           files:
             /opt/sage/bin/make_env_vars_file.sh:
               source: "https://raw.githubusercontent.com/Sage-Bionetworks/service-catalog-utils/v2.1.0/linux/opt/sage/bin/make_env_vars_file.sh"
-              mode: "00744"
+              mode: "000744"
               owner: "root"
               group: "root"
           commands:
