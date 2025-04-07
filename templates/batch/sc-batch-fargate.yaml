@@ -206,6 +206,7 @@ Resources:
         config:
           ignore_checks:  # Ignore cfn-lint errors for PyPlate.
             - E3002
+            - E3012
     Type: AWS::Batch::JobDefinition
     Properties:
       Type: container
