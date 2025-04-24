@@ -92,6 +92,7 @@ Resources:
         - !ImportValue
           'Fn::Sub': '${AWS::Region}-get-role-policy-ReadAssumedRoleInformationPolicy'
         - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore' #For maintenance tasks
+        - 'arn:aws:iam::aws:policy/AWSQuickSetupPatchPolicyBaselineAccess' #For SSM patching
         - !ImportValue
           'Fn::Sub': '${AWS::Region}-sc-product-ec2-linux-notebook-write-to-ssm-policy-WriteToSSMPolicy'
       AssumeRolePolicyDocument:
