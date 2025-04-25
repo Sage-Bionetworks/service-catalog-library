@@ -133,7 +133,7 @@ Resources:
         set_env_vars:
           files:
             'c:\\scripts\\set_env_vars_file.ps1':
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/infra-utils/v1.0.8/aws/set_env_vars_file.ps1"
+              source: "https://raw.githubusercontent.com/Sage-Bionetworks/infra-utils/v1.0.9/aws/set_env_vars_file.ps1"
               mode: "0664"
           commands:
             01_set_env_vars:
@@ -148,7 +148,7 @@ Resources:
               source: "https://raw.githubusercontent.com/Sage-Bionetworks/infra-utils/v1.0.8/aws/install-ms-vc.ps1"
               mode: "0664"
             'c:\\scripts\\install-jc-agent.ps1':
-              source: "https://raw.githubusercontent.com/Sage-Bionetworks/infra-utils/v1.0.8/aws/install-jc-agent.ps1"
+              source: "https://raw.githubusercontent.com/TheJumpCloud/support/master/scripts/windows/InstallWindowsAgent.ps1"
               mode: "0664"
           commands:
             01_install_ms_vc:
@@ -161,11 +161,11 @@ Resources:
                 - ''
                 - - 'Powershell.exe Set-ExecutionPolicy Bypass -Scope Process -Force;'
                   - 'Powershell.exe C:\scripts\install-jc-agent.ps1 '
-                  - ' -JcConnectKey '
+                  - ' -JumpCloudConnectKey '
                   - Fn::Transform: {"Name": "SsmParam", "Parameters": {"Type": "SecureString", "Name": "/infra/JcConnectKey"}}
                   - ' > C:\scripts\install-jc-agent.log'
     Properties:
-      ImageId: 'ami-0dbdf36ae5f30d8d1'    # https://github.com/Sage-Bionetworks-IT/packer-base-winserver2019/releases/tag/v0.0.1
+      ImageId: 'ami-08079232459aa7414'    # https://github.com/Sage-Bionetworks-IT/packer-winserver-2022/releases/tag/v0.0.1
       InstanceType: !Ref 'WindowsInstanceType'
       SubnetId: !ImportValue
           'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", PrivateSubnet1]
