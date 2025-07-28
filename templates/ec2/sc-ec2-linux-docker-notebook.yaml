@@ -342,7 +342,7 @@ Resources:
                 # https://jupyter-docker-stacks.readthedocs.io/en/latest/using/common.html#docker-options
                 # to give user 'sudo' ability inside the notebook, add the env var
                 # 'GRANT_SUDO=yes' and run the container as 'root'
-                -e GRANT_SUDO=yes --user root\
+                -e GRANT_SUDO=yes --user root \
                 -v ${WORK_VOLUME_NAME}:${JUPYTER_WORK_DIR} \
                 --network ${NETWORK_NAME} ${DOCKER_IMAGE} \
                 bash -c "start-notebook.py --IdentityProvider.token='' --NotebookApp.base_url=/${EC2_INSTANCE_ID} \
