@@ -331,17 +331,17 @@ Resources:
                 TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
                 EC2_INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/instance-id)
                 SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME=/${SERVICE_CATALOG_PREFIX}/${EC2_INSTANCE_ID}/${SSM_PARAMETER_SUFFIX}
-                # For idempotency this command tries to restart an existing container and only creates one if that fails.
+                # (1) For idempotency this command tries to restart an existing container and only creates one if that fails.
+                # (2) from
+                # https://jupyter-docker-stacks.readthedocs.io/en/latest/using/common.html#docker-options
+                # to give user 'sudo' ability inside the notebook, add the env var
+                # 'GRANT_SUDO=yes' and run the container as 'root'
                 docker start ${NOTEBOOK_CONTAINER_NAME} || \
                 docker run -d --name ${NOTEBOOK_CONTAINER_NAME} \
                 --restart unless-stopped \
                 -e DOCKER_STACKS_JUPYTER_CMD=notebook \
                 -e SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME=${SYNAPSE_TOKEN_AWS_SSM_PARAMETER_NAME} \
                 -e AWS_DEFAULT_REGION=${AWS_REGION} \
-                # from
-                # https://jupyter-docker-stacks.readthedocs.io/en/latest/using/common.html#docker-options
-                # to give user 'sudo' ability inside the notebook, add the env var
-                # 'GRANT_SUDO=yes' and run the container as 'root'
                 -e GRANT_SUDO=yes --user root \
                 -v ${WORK_VOLUME_NAME}:${JUPYTER_WORK_DIR} \
                 --network ${NETWORK_NAME} ${DOCKER_IMAGE} \
