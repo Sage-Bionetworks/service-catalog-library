@@ -115,7 +115,7 @@ Resources:
           files:
             'c:\\scripts\\install-chocolatey.ps1':
               source: "https://chocolatey.org/install.ps1"
-              mode: "0664"
+              mode: "000664"
           commands:
             01_install_nuget:
               command: 'Powershell.exe Install-PackageProvider -Name NuGet -Force'
@@ -134,7 +134,7 @@ Resources:
           files:
             'c:\\scripts\\set_env_vars_file.ps1':
               source: "https://raw.githubusercontent.com/Sage-Bionetworks/infra-utils/v1.0.9/aws/set_env_vars_file.ps1"
-              mode: "0664"
+              mode: "000664"
           commands:
             01_set_env_vars:
               command: !Join
@@ -146,10 +146,10 @@ Resources:
           files:
             'c:\scripts\install-ms-vc.ps1':
               source: "https://raw.githubusercontent.com/Sage-Bionetworks/infra-utils/v1.0.8/aws/install-ms-vc.ps1"
-              mode: "0664"
+              mode: "000664"
             'c:\\scripts\\install-jc-agent.ps1':
               source: "https://raw.githubusercontent.com/TheJumpCloud/support/master/scripts/windows/InstallWindowsAgent.ps1"
-              mode: "0664"
+              mode: "000664"
           commands:
             01_install_ms_vc:
               command: !Join
@@ -221,8 +221,6 @@ Resources:
         'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", VPCId]
       SecurityGroupIngress:
         - CidrIp: "10.50.0.0/16"
-          FromPort: -1
-          ToPort: -1
           IpProtocol: "-1"
 Outputs:
   WindowsInstancePrivateIpAddress:
