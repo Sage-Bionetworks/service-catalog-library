@@ -38,7 +38,7 @@ Mappings:
     Rstudio:
       NoteBookTypeForDocker: rstudio
       ConfigSet: StartContainersRstudio
-      DockerImage: ghcr.io/sage-bionetworks-it/rstudio-service-catalog:1.1
+      DockerImage: ghcr.io/sage-bionetworks-it/rstudio-service-catalog:1.2
       WorkVolumeName: work-dir
       NotebookWorkDir: /home/rstudio
   GlobalVars:
