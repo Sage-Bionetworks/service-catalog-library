@@ -39,11 +39,22 @@ Parameters:
       - t3a.large
       - t3a.xlarge
       - t3a.2xlarge
+      - t3g.micro
+      - t3g.small
+      - t3g.medium
+      - t3g.large
+      - t3g.xlarge
+      - t3g.2xlarge
       - m6a.large
       - m6a.xlarge
       - m6a.2xlarge
       - m6a.4xlarge
       - m6a.8xlarge
+      - m6g.large
+      - m6g.xlarge
+      - m6g.2xlarge
+      - m6g.4xlarge
+      - m6g.8xlarge
       - c6a.large
       - c6a.xlarge
       - c6a.2xlarge
@@ -54,9 +65,17 @@ Parameters:
       - r6a.2xlarge
       - r6a.4xlarge
       - r6a.8xlarge
-      - g5.xlarge
-      - g5.2xlarge
-      - g5.4xlarge
+      - r6g.large
+      - r6g.xlarge
+      - r6g.2xlarge
+      - r6g.4xlarge
+      - r6g.8xlarge
+      - g4ad.xlarge
+      - g4ad.2xlarge
+      - g4ad.4xlarge
+      - g5g.xlarge
+      - g5g.2xlarge
+      - g5g.4xlarge
     Default: t3a.small
     Description: Amazon EC2 Instance Type
     Type: String
