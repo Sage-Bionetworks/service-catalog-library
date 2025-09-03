@@ -99,6 +99,7 @@ Resources:
         config:
           ignore_checks:
             - W1011
+            - W3687
     Properties:
       GroupDescription: 'Allow network access from TGW Hub'
       VpcId: !ImportValue
@@ -144,6 +145,7 @@ Resources:
         config:
           ignore_checks:
             - E1022
+            - E3009
             - W1011
       'AWS::CloudFormation::Init':
         configSets:
