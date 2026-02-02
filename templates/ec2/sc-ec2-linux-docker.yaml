@@ -161,8 +161,7 @@ Resources:
             - cfn_hup_service
           SetEnv:
             - set_env_vars
-            - install_cloudwatch_agent
-            - configure_cloudwatch_agent
+            - setup_cloudwatch_agent
         cfn_hup_service:
           files:
             /etc/cfn/cfn-hup.conf:
@@ -218,11 +217,10 @@ Resources:
                 AWS_REGION: !Ref AWS::Region
                 STACK_NAME: !Ref AWS::StackName
                 STACK_ID: !Ref AWS::StackId
-        install_cloudwatch_agent:
+        setup_cloudwatch_agent:
           packages:
             yum:
               amazon-cloudwatch-agent: []
-        configure_cloudwatch_agent:
           files:
             /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json:
               content: !Sub |

@@ -6,11 +6,9 @@ This reference architecture creates an AWS Service Catalog Portfolio called "Ser
 * EC2 Windows with Jumpcloud Integration, which builds one EC2 instance using a Windows Server 2019 AMI.
 
 ## Logging
-The EC2 Linux with Docker Integration product has have been enhanced with AWS CloudWatch agent integration to monitor both system metrics and Docker container logs.
+The EC2 Linux with Docker Integration product has been enhanced with AWS CloudWatch agent integration to monitor both system metrics and Docker container logs.
 
 ### CloudWatch Log Groups
-The template creates log groups automatically with system Metrics
-
 The template creates CloudWatch log groups automatically for system and application logs.
 
 ### Log Retention
