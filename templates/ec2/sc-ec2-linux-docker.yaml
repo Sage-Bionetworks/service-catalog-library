@@ -5,6 +5,7 @@ Metadata:
     config:
       ignore_checks:
         - E7001
+        - E1019
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -256,7 +257,11 @@ Resources:
                     }
                   },
                   "metrics": {
-                    "namespace": "CWAgent",
+                    "namespace": "CWAgent/${AWS::StackName}",
+                    "append_dimensions": {
+                      "InstanceId": "${aws:InstanceId}",
+                      "StackName": "${AWS::StackName}"
+                    },
                     "metrics_collected": {
                       "cpu": {
                         "measurement": [
@@ -266,7 +271,7 @@ Resources:
                           "cpu_usage_system"
                         ],
                         "metrics_collection_interval": 60,
-                        "totalcpu": false
+                        "totalcpu": true
                       },
                       "disk": {
                         "measurement": [

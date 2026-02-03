@@ -9,7 +9,7 @@ This reference architecture creates an AWS Service Catalog Portfolio called "Ser
 The EC2 Linux with Docker Integration product has been enhanced with AWS CloudWatch agent integration to monitor both system metrics and Docker container logs.
 
 ### CloudWatch Log Groups
-The template creates CloudWatch log groups automatically for system and application logs.
+The template creates CloudWatch log groups automatically for system logs.
 
 ### Log Retention
 
