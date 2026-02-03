@@ -163,6 +163,7 @@ Resources:
             - cfn_hup_service
           SetEnv:
             - set_env_vars
+          SetupMonitoring:
             - setup_cloudwatch_agent
         cfn_hup_service:
           files:
@@ -316,7 +317,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets SetupCfn,SetEnv --region ${AWS::Region}
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets SetupCfn,SetEnv,SetupMonitoring --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
       PropagateTagsToVolumeOnCreation: true
       Tags:
