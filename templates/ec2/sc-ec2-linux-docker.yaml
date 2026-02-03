@@ -129,7 +129,7 @@ Resources:
           'Fn::Sub': '${AWS::Region}-get-role-policy-ReadAssumedRoleInformationPolicy'
         - "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
         - "arn:aws:iam::aws:policy/AWSQuickSetupPatchPolicyBaselineAccess" #For SSM patching
-        - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy' #For CloudWatch agent
+        - "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy" #For CloudWatch agent
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -354,8 +354,7 @@ Outputs:
     Value: "https://help.sc.sageit.org/sc/Service-Catalog-Provisioning.938836322.html"
   CloudWatchLogGroups:
     Description: 'CloudWatch Log Groups for monitoring'
-    Value: !Sub |
-      System Logs: /aws/ec2/system/${AWS::StackName}
+    Value: !Sub 'System Logs: /aws/ec2/system/${AWS::StackName}'
   CloudWatchConsoleURI:
     Description: 'CloudWatch Logs Console'
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#logsV2:log-groups"
