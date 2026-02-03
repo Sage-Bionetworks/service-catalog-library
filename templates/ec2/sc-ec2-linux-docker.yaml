@@ -149,6 +149,7 @@ Resources:
         - !Ref 'InstanceRole'
   EC2Instance:
     Type: AWS::EC2::Instance
+    DependsOn: SystemLogGroup
     Metadata:
       cfn-lint:
         config:
