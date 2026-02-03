@@ -281,6 +281,13 @@ Resources:
                         "metrics_collection_interval": 60,
                         "resources": [
                           "*"
+                        ],
+                        "ignore_fs": [
+                          "sysfs",
+                          "devtmpfs",
+                          "tmpfs",
+                          "debugfs",
+                          "tracefs"
                         ]
                       },
                       "mem": {
