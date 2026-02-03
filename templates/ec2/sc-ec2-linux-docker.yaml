@@ -99,6 +99,28 @@ Resources:
     Properties:
       LogGroupName: !Sub '/aws/ec2/system/${AWS::StackName}'
       RetentionInDays: 30
+  MonitoringDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub '${AWS::StackName}-monitoring'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["CWAgent/${AWS::StackName}", "disk_used_percent", {"stat": "Average"}]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "Disk Usage %",
+                "yAxis": {"left": {"min": 0, "max": 100}}
+              }
+            }
+          ]
+        }
 
   TgwHubSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -303,7 +325,10 @@ Resources:
               owner: "root"
               group: "root"
           commands:
-            start_cloudwatch_agent:
+            01_fix_log_permissions:
+              command: "chmod 644 /var/log/cloud-init-output.log"
+              ignoreErrors: true
+            02_start_cloudwatch_agent:
               command: "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"
     Properties:
       ImageId: !FindInMap [AMIs, !Ref AMI, AmiId]
