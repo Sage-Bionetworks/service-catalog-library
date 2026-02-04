@@ -99,29 +99,6 @@ Resources:
     Properties:
       LogGroupName: !Sub '/aws/ec2/system/${AWS::StackName}'
       RetentionInDays: 30
-  MonitoringDashboard:
-    Type: AWS::CloudWatch::Dashboard
-    Properties:
-      DashboardName: !Sub '${AWS::StackName}-monitoring'
-      DashboardBody: !Sub |
-        {
-          "widgets": [
-            {
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  ["CWAgent/${AWS::StackName}", "disk_used_percent", {"stat": "Average"}]
-                ],
-                "period": 300,
-                "stat": "Average",
-                "region": "${AWS::Region}",
-                "title": "Disk Usage %",
-                "yAxis": {"left": {"min": 0, "max": 100}}
-              }
-            }
-          ]
-        }
-
   TgwHubSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Metadata:
@@ -258,18 +235,6 @@ Resources:
                     "logs_collected": {
                       "files": {
                         "collect_list": [
-                          {
-                            "file_path": "/var/log/messages",
-                            "log_group_name": "/aws/ec2/system/${AWS::StackName}",
-                            "log_stream_name": "{instance_id}/messages",
-                            "timezone": "UTC"
-                          },
-                          {
-                            "file_path": "/var/log/secure",
-                            "log_group_name": "/aws/ec2/system/${AWS::StackName}",
-                            "log_stream_name": "{instance_id}/secure",
-                            "timezone": "UTC"
-                          },
                           {
                             "file_path": "/var/log/cloud-init-output.log",
                             "log_group_name": "/aws/ec2/system/${AWS::StackName}",
