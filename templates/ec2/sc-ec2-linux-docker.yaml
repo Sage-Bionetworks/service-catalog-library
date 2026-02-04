@@ -5,7 +5,6 @@ Metadata:
     config:
       ignore_checks:
         - E7001
-        - E1019
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -93,13 +92,6 @@ Parameters:
     MinValue: 30
     MaxValue: 5000
 Resources:
-  # CloudWatch Log Groups for system monitoring
-  SystemLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub '/aws/ec2/system/${AWS::StackName}'
-      RetentionInDays: 30
-
   TgwHubSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Metadata:
@@ -130,7 +122,6 @@ Resources:
           'Fn::Sub': '${AWS::Region}-get-role-policy-ReadAssumedRoleInformationPolicy'
         - "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
         - "arn:aws:iam::aws:policy/AWSQuickSetupPatchPolicyBaselineAccess" #For SSM patching
-        - "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy" #For CloudWatch agent
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -149,7 +140,6 @@ Resources:
         - !Ref 'InstanceRole'
   EC2Instance:
     Type: AWS::EC2::Instance
-    DependsOn: SystemLogGroup
     Metadata:
       cfn-lint:
         config:
@@ -163,7 +153,6 @@ Resources:
             - cfn_hup_service
           SetEnv:
             - set_env_vars
-            - setup_cloudwatch_agent
         cfn_hup_service:
           files:
             /etc/cfn/cfn-hup.conf:
@@ -219,85 +208,6 @@ Resources:
                 AWS_REGION: !Ref AWS::Region
                 STACK_NAME: !Ref AWS::StackName
                 STACK_ID: !Ref AWS::StackId
-        setup_cloudwatch_agent:
-          packages:
-            yum:
-              amazon-cloudwatch-agent: []
-          files:
-            /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json:
-              content: !Sub |
-                {
-                  "agent": {
-                    "metrics_collection_interval": 60,
-                    "run_as_user": "cwagent"
-                  },
-                  "logs": {
-                    "logs_collected": {
-                      "files": {
-                        "collect_list": [
-                          {
-                            "file_path": "/var/log/messages",
-                            "log_group_name": "/aws/ec2/system/${AWS::StackName}",
-                            "log_stream_name": "{instance_id}/messages",
-                            "timezone": "UTC"
-                          },
-                          {
-                            "file_path": "/var/log/secure",
-                            "log_group_name": "/aws/ec2/system/${AWS::StackName}",
-                            "log_stream_name": "{instance_id}/secure",
-                            "timezone": "UTC"
-                          },
-                          {
-                            "file_path": "/var/log/cloud-init-output.log",
-                            "log_group_name": "/aws/ec2/system/${AWS::StackName}",
-                            "log_stream_name": "{instance_id}/cloud-init",
-                            "timezone": "UTC"
-                          }
-                        ]
-                      }
-                    }
-                  },
-                  "metrics": {
-                    "namespace": "CWAgent/${AWS::StackName}",
-                    "append_dimensions": {
-                      "InstanceId": "${aws:InstanceId}",
-                      "StackName": "${AWS::StackName}"
-                    },
-                    "metrics_collected": {
-                      "cpu": {
-                        "measurement": [
-                          "cpu_usage_idle",
-                          "cpu_usage_iowait",
-                          "cpu_usage_user",
-                          "cpu_usage_system"
-                        ],
-                        "metrics_collection_interval": 60,
-                        "totalcpu": true
-                      },
-                      "disk": {
-                        "measurement": [
-                          "used_percent"
-                        ],
-                        "metrics_collection_interval": 60,
-                        "resources": [
-                          "*"
-                        ]
-                      },
-                      "mem": {
-                        "measurement": [
-                          "mem_used_percent"
-                        ],
-                        "metrics_collection_interval": 60
-                      }
-                    }
-                  }
-                }
-              mode: "000644"
-              owner: "root"
-              group: "root"
-          commands:
-            start_cloudwatch_agent:
-              command: "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"
     Properties:
       ImageId: !FindInMap [AMIs, !Ref AMI, AmiId]
       InstanceType: !Ref 'EC2InstanceType'
@@ -358,9 +268,3 @@ Outputs:
   Documentation:
     Description: 'Service Catalog Documentation'
     Value: "https://help.sc.sageit.org/sc/Service-Catalog-Provisioning.938836322.html"
-  CloudWatchLogGroups:
-    Description: 'CloudWatch Log Groups for monitoring'
-    Value: !Sub 'System Logs: /aws/ec2/system/${AWS::StackName}'
-  CloudWatchConsoleURI:
-    Description: 'CloudWatch Logs Console'
-    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#logsV2:log-groups"
