@@ -237,7 +237,13 @@ Resources:
                           {
                             "file_path": "/var/log/cloud-init-output.log",
                             "log_group_name": "/aws/ec2/system/${AWS::StackName}",
-                            "log_stream_name": "{instance_id}/cloud-init",
+                            "log_stream_name": "{instance_id}/init",
+                            "timezone": "UTC"
+                          },
+                          {
+                            "file_path": "/var/log/cfn-init-cmd.log",
+                            "log_group_name": "/aws/ec2/system/${AWS::StackName}",
+                            "log_stream_name": "{instance_id}/init",
                             "timezone": "UTC"
                           }
                         ]
@@ -290,7 +296,7 @@ Resources:
               group: "root"
           commands:
             01_fix_log_permissions:
-              command: "chmod 644 /var/log/cloud-init-output.log"
+              command: "chmod 644 /var/log/cloud-init-output.log /var/log/cfn-init-cmd.log"
               ignoreErrors: true
             02_start_cloudwatch_agent:
               command: "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"
