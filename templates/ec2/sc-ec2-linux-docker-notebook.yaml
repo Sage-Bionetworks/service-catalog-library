@@ -318,9 +318,6 @@ Resources:
                 STACK_NAME: !Ref AWS::StackName
                 STACK_ID: !Ref AWS::StackId
         setup_cloudwatch_agent:
-          packages:
-            yum:
-              amazon-cloudwatch-agent: []
           files:
             /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json:
               content: !Sub |
@@ -334,9 +331,15 @@ Resources:
                       "files": {
                         "collect_list": [
                           {
-                            "file_path": "/var/log/cloud-init.log",
+                            "file_path": "/var/log/cloud-init-output.log",
                             "log_group_name": "/aws/ec2/system/${AWS::StackName}",
-                            "log_stream_name": "{instance_id}/cloud-init",
+                            "log_stream_name": "{instance_id}/init",
+                            "timezone": "UTC"
+                          },
+                          {
+                            "file_path": "/var/log/cfn-init-cmd.log",
+                            "log_group_name": "/aws/ec2/system/${AWS::StackName}",
+                            "log_stream_name": "{instance_id}/init",
                             "timezone": "UTC"
                           },
                           {
@@ -395,10 +398,14 @@ Resources:
               group: "root"
           commands:
             01_fix_log_permissions:
-              command: "chmod 644 /var/log/cloud-init.log /var/log/syslog"
+              command: "chmod 644 var/log/cloud-init-output.log /var/log/cfn-init-cmd.log /var/log/syslog"
               ignoreErrors: true
-            02_start_cloudwatch_agent:
-              command: "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"
+            02_download_cloudwatch_agent:
+              command: "sudo wget https://amazoncloudwatch-agent.s3.amazonaws.com/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb"
+            03_install_cloudwatch_agent:
+              command: "sudo sudo dpkg -i -E ./amazon-cloudwatch-agent.deb"
+            04_start_cloudwatch_agent:
+              command: "sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"
         start_docker_network:
           commands:
             start_docker_network:
