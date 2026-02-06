@@ -119,6 +119,12 @@ Parameters:
     MaxValue: 2000
 
 Resources:
+  # CloudWatch Log Groups for system monitoring
+  SystemLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/ec2/system/${AWS::StackName}'
+      RetentionInDays: 30
   InstanceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -132,6 +138,7 @@ Resources:
           'Fn::Sub': '${AWS::Region}-get-role-policy-ReadAssumedRoleInformationPolicy'
         - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore' #For maintenance tasks
         - 'arn:aws:iam::aws:policy/AWSQuickSetupPatchPolicyBaselineAccess' #For SSM patching
+        - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy' #For CloudWatch agent
         - !ImportValue
           'Fn::Sub': '${AWS::Region}-sc-product-ec2-linux-notebook-write-to-ssm-policy-WriteToSSMPolicy'
       AssumeRolePolicyDocument:
@@ -272,6 +279,7 @@ Resources:
 
   LinuxInstance:
     Type: AWS::EC2::Instance
+    DependsOn: SystemLogGroup
     Metadata:
       cfn-lint:
         config:
@@ -283,12 +291,14 @@ Resources:
         configSets:
           StartContainersJupyter:
             - set_env_vars
+            - setup_cloudwatch_agent
             - start_docker_network
             - start_reverse_proxy
             - start_jupyter_notebook
             - start_watchtower
           StartContainersRstudio:
             - set_env_vars
+            - setup_cloudwatch_agent
             - start_docker_network
             - start_reverse_proxy
             - start_rstudio_notebook
@@ -307,6 +317,95 @@ Resources:
                 AWS_REGION: !Ref AWS::Region
                 STACK_NAME: !Ref AWS::StackName
                 STACK_ID: !Ref AWS::StackId
+        setup_cloudwatch_agent:
+          files:
+            /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json:
+              content: !Sub |
+                {
+                  "agent": {
+                    "metrics_collection_interval": 60,
+                    "run_as_user": "cwagent"
+                  },
+                  "logs": {
+                    "logs_collected": {
+                      "files": {
+                        "collect_list": [
+                          {
+                            "file_path": "/var/log/cloud-init-output.log",
+                            "log_group_name": "/aws/ec2/system/${AWS::StackName}",
+                            "log_stream_name": "{instance_id}/init",
+                            "timezone": "UTC"
+                          },
+                          {
+                            "file_path": "/var/log/cfn-init-cmd.log",
+                            "log_group_name": "/aws/ec2/system/${AWS::StackName}",
+                            "log_stream_name": "{instance_id}/init",
+                            "timezone": "UTC"
+                          },
+                          {
+                            "file_path": "/var/log/syslog",
+                            "log_group_name": "/aws/ec2/system/${AWS::StackName}",
+                            "log_stream_name": "{instance_id}/syslog",
+                            "timezone": "UTC"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "metrics": {
+                    "namespace": "CWAgent/${AWS::StackName}",
+                    "append_dimensions": {
+                      "StackName": "${AWS::StackName}"
+                    },
+                    "metrics_collected": {
+                      "cpu": {
+                        "measurement": [
+                          "cpu_usage_idle",
+                          "cpu_usage_iowait",
+                          "cpu_usage_user",
+                          "cpu_usage_system"
+                        ],
+                        "metrics_collection_interval": 60,
+                        "totalcpu": true
+                      },
+                      "disk": {
+                        "measurement": [
+                          "used_percent"
+                        ],
+                        "metrics_collection_interval": 60,
+                        "resources": [
+                          "*"
+                        ],
+                        "ignore_fs": [
+                          "sysfs",
+                          "devtmpfs",
+                          "tmpfs",
+                          "debugfs",
+                          "tracefs"
+                        ]
+                      },
+                      "mem": {
+                        "measurement": [
+                          "mem_used_percent"
+                        ],
+                        "metrics_collection_interval": 60
+                      }
+                    }
+                  }
+                }
+              mode: "000644"
+              owner: "root"
+              group: "root"
+          commands:
+            01_fix_log_permissions:
+              command: "chmod 644 var/log/cloud-init-output.log /var/log/cfn-init-cmd.log /var/log/syslog"
+              ignoreErrors: true
+            02_download_cloudwatch_agent:
+              command: "sudo wget https://amazoncloudwatch-agent.s3.amazonaws.com/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb"
+            03_install_cloudwatch_agent:
+              command: "sudo sudo dpkg -i -E ./amazon-cloudwatch-agent.deb"
+            04_start_cloudwatch_agent:
+              command: "sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"
         start_docker_network:
           commands:
             start_docker_network:
@@ -541,3 +640,9 @@ Outputs:
   Documentation:
     Description: 'Service Catalog Documentation'
     Value: "https://help.sc.sageit.org/sc/Service-Catalog-Provisioning.938836322.html"
+  CloudWatchLogGroups:
+    Description: 'CloudWatch Log Groups for monitoring'
+    Value: !Sub 'System Logs: /aws/ec2/system/${AWS::StackName}'
+  CloudWatchConsoleURI:
+    Description: 'CloudWatch Logs Console'
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#logsV2:log-groups"
