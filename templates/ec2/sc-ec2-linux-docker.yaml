@@ -21,9 +21,14 @@ Metadata:
       VolumeSize:
         default: Disk Size
 Mappings:
+  # AMI IDs are built by the aws-infra amazon-linux-2023-docker ImageBuilder pipeline
+  # (stack: amazon-linux-2023-docker-image-pipeline). Current values can be looked up via the
+  # pipeline's CloudFormation Outputs (AmiIdX86 / AmiIdArm64), then pasted here — same manual
+  # update process as before, just with one literal per architecture instead of a single global one.
   AMIs:
     AmazonLinuxDocker:
-      AmiId: "ami-07260db8d2b10c0ad"  # https://github.com/Sage-Bionetworks-IT/packer-amazonlinux-docker/tree/v2.0.3
+      X86AmiId: "ami-01401839b4160d829"  # https://github.com/Sage-Bionetworks/aws-infra/tree/v0.10.7
+      Arm64AmiId: "ami-07a5031727675bf5c"  # https://github.com/Sage-Bionetworks/aws-infra/tree/v0.10.7
   AccountToImportParams:
     'Fn::Transform':
       Name: 'AWS::Include'
@@ -91,6 +96,14 @@ Parameters:
     Default: 30
     MinValue: 30
     MaxValue: 5000
+Conditions:
+  # Instance family is the part of EC2InstanceType before the ".". Only Graviton (arm64) families
+  # need to be listed here — anything else is treated as x86_64.
+  IsArm64Instance: !Or
+    - !Equals [!Select [0, !Split [".", !Ref EC2InstanceType]], "t4g"]
+    - !Equals [!Select [0, !Split [".", !Ref EC2InstanceType]], "m6g"]
+    - !Equals [!Select [0, !Split [".", !Ref EC2InstanceType]], "r6g"]
+    - !Equals [!Select [0, !Split [".", !Ref EC2InstanceType]], "g5g"]
 Resources:
   # CloudWatch Log Groups for system monitoring
   SystemLogGroup:
@@ -301,7 +314,10 @@ Resources:
             02_start_cloudwatch_agent:
               command: "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"
     Properties:
-      ImageId: !FindInMap [AMIs, !Ref AMI, AmiId]
+      ImageId: !If
+        - IsArm64Instance
+        - !FindInMap [AMIs, !Ref AMI, Arm64AmiId]
+        - !FindInMap [AMIs, !Ref AMI, X86AmiId]
       InstanceType: !Ref 'EC2InstanceType'
       SubnetId: !ImportValue
           'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", PrivateSubnet]

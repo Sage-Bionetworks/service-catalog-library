@@ -37,5 +37,12 @@ sceptre_user_data:
 ### Account and Credentials
 While the templates in this library could be used in any AWS account, Sage Bionetworks is currently deploying to the "scipooldev" and "scipoolprod" account.
 
+### Adding or changing EC2 instance types
+If a template's `EC2InstanceType` `AllowedValues` includes instance families on more than one CPU
+architecture (e.g. Graviton/arm64 alongside x86_64), the AMI selection logic (`Mappings`/`Conditions`
+driving `ImageId`) must be updated in the **same PR** as the instance-type list change — not as a
+follow-up. Adding a new architecture family to the allowed list without a matching AMI for that
+architecture will let users select an instance type that fails to launch.
+
 ## License
 This project is licensed under the Apache 2.0 license - see the [LICENSE](LICENSE) file for details.
