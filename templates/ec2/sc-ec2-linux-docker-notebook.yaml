@@ -23,6 +23,14 @@ Metadata:
         default: Disk Size
 
 Mappings:
+  # AMI IDs are built by the aws-infra amazon-linux-2023-docker ImageBuilder pipeline
+  # (stack: amazon-linux-2023-docker-image-pipeline) — the same pipeline sc-ec2-linux-docker.yaml
+  # uses. Current values can be looked up via the pipeline's CloudFormation Outputs
+  # (AmiIdX86 / AmiIdArm64), then pasted here — same manual update process as sc-ec2-linux-docker.yaml.
+  AMIs:
+    AmazonLinuxDocker:
+      X86AmiId: "ami-01401839b4160d829"  # https://github.com/Sage-Bionetworks/aws-infra/tree/v0.10.7
+      Arm64AmiId: "ami-07a5031727675bf5c"  # https://github.com/Sage-Bionetworks/aws-infra/tree/v0.10.7
   AccountToImportParams:
     'Fn::Transform':
       Name: 'AWS::Include'
@@ -117,6 +125,15 @@ Parameters:
     Default: 50
     MinValue: 50
     MaxValue: 2000
+
+Conditions:
+  # Instance family is the part of EC2InstanceType before the ".". Only Graviton (arm64) families
+  # need to be listed here — anything else is treated as x86_64.
+  IsArm64Instance: !Or
+    - !Equals [!Select [0, !Split [".", !Ref EC2InstanceType]], "t4g"]
+    - !Equals [!Select [0, !Split [".", !Ref EC2InstanceType]], "m6g"]
+    - !Equals [!Select [0, !Split [".", !Ref EC2InstanceType]], "r6g"]
+    - !Equals [!Select [0, !Split [".", !Ref EC2InstanceType]], "g5g"]
 
 Resources:
   # CloudWatch Log Groups for system monitoring
@@ -318,6 +335,10 @@ Resources:
                 STACK_NAME: !Ref AWS::StackName
                 STACK_ID: !Ref AWS::StackId
         setup_cloudwatch_agent:
+          # The CloudWatch agent binary is already installed at AMI build time (see the
+          # amazon-linux-2023-docker ImageBuilder pipeline's amazon-cloudwatch-agent-linux
+          # component) — this configSet only needs to write the config and start it, the same
+          # pattern sc-ec2-linux-docker.yaml already uses. No install step needed.
           files:
             /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json:
               content: !Sub |
@@ -343,7 +364,7 @@ Resources:
                             "timezone": "UTC"
                           },
                           {
-                            "file_path": "/var/log/syslog",
+                            "file_path": "/var/log/messages",
                             "log_group_name": "/aws/ec2/system/${AWS::StackName}",
                             "log_stream_name": "{instance_id}/syslog",
                             "timezone": "UTC"
@@ -398,13 +419,9 @@ Resources:
               group: "root"
           commands:
             01_fix_log_permissions:
-              command: "chmod 644 var/log/cloud-init-output.log /var/log/cfn-init-cmd.log /var/log/syslog"
+              command: "chmod 644 /var/log/cloud-init-output.log /var/log/cfn-init-cmd.log /var/log/messages"
               ignoreErrors: true
-            02_download_cloudwatch_agent:
-              command: "sudo wget https://amazoncloudwatch-agent.s3.amazonaws.com/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb"
-            03_install_cloudwatch_agent:
-              command: "sudo sudo dpkg -i -E ./amazon-cloudwatch-agent.deb"
-            04_start_cloudwatch_agent:
+            02_start_cloudwatch_agent:
               command: "sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"
         start_docker_network:
           commands:
@@ -530,7 +547,10 @@ Resources:
                 -v /var/run/docker.sock:/var/run/docker.sock \
                 containrrr/watchtower
     Properties:
-      ImageId: "ami-04e92928ecf1c2066" # https://github.com/Sage-Bionetworks-IT/packer-base-ubuntu-jammy/tree/v1.0.2
+      ImageId: !If
+        - IsArm64Instance
+        - !FindInMap [AMIs, AmazonLinuxDocker, Arm64AmiId]
+        - !FindInMap [AMIs, AmazonLinuxDocker, X86AmiId]
       InstanceType: !Ref 'EC2InstanceType'
       SubnetId: !ImportValue
           'Fn::FindInMap': [AccountToImportParams, !Ref "AWS::AccountId", PrivateSubnet]
