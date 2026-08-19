@@ -29,8 +29,8 @@ Mappings:
   # (AmiIdX86 / AmiIdArm64), then pasted here — same manual update process as sc-ec2-linux-docker.yaml.
   AMIs:
     AmazonLinuxDocker:
-      X86AmiId: "ami-01401839b4160d829"  # https://github.com/Sage-Bionetworks/aws-infra/tree/v0.10.7
-      Arm64AmiId: "ami-07a5031727675bf5c"  # https://github.com/Sage-Bionetworks/aws-infra/tree/v0.10.7
+      X86AmiId: "ami-01401839b4160d829"  # https://github.com/Sage-Bionetworks/aws-infra/blob/v0.10.7/templates/ImageBuilder/amazon-linux-2023-docker.yaml
+      Arm64AmiId: "ami-07a5031727675bf5c"  # https://github.com/Sage-Bionetworks/aws-infra/blob/v0.10.7/templates/ImageBuilder/amazon-linux-2023-docker.yaml
   AccountToImportParams:
     'Fn::Transform':
       Name: 'AWS::Include'
